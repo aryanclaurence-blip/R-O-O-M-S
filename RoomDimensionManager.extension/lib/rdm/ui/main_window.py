@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Single WPF application host for the pure pyRevit extension."""
 import os
-from System.Collections.ObjectModel import ObservableCollection
+from pyrevit.framework import ObservableCollection
 from Autodesk.Revit.DB import Transaction
 from pyrevit import forms, revit
 from rdm.geometry.bounds import calculate_from_boundary
