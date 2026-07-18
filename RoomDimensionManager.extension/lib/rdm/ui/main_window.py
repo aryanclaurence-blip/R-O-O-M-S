@@ -2,7 +2,7 @@
 """Single WPF application host for the pure pyRevit extension."""
 import os
 from pyrevit.framework import ObservableCollection
-from Autodesk.Revit.DB import StorageType, Transaction
+from Autodesk.Revit.DB import BuiltInParameter, StorageType, Transaction
 from pyrevit import forms, revit
 from rdm.geometry.bounds import calculate_from_boundary
 from rdm.parameters.service import ParameterService
@@ -12,8 +12,10 @@ from rdm.revit.room_service import RoomService
 
 class RoomResult(object):
     def __init__(self, room, dimensions, stored_length, stored_width, result):
-        self.RoomNumber = room.Number
-        self.RoomName = room.Name
+        number = room.get_Parameter(BuiltInParameter.ROOM_NUMBER)
+        name = room.get_Parameter(BuiltInParameter.ROOM_NAME)
+        self.RoomNumber = number.AsString() if number and number.HasValue else ""
+        self.RoomName = name.AsString() if name and name.HasValue else ""
         self.Classification = dimensions.classification
         self.CalculatedLength = round(dimensions.length, 3)
         self.CalculatedWidth = round(dimensions.width, 3)
