@@ -18,9 +18,9 @@
       <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
       <StackPanel Grid.Column="0" Margin="0,0,12,0">
         <TextBlock Text="Length Parameter" FontWeight="Bold"/>
-        <TextBox x:Name="length_parameter" Text="Length" Margin="0,5,0,10"/>
+        <ComboBox x:Name="length_parameter" Margin="0,5,0,10"/>
         <TextBlock Text="Width Parameter" FontWeight="Bold"/>
-        <TextBox x:Name="width_parameter" Text="Width" Margin="0,5,0,0"/>
+        <ComboBox x:Name="width_parameter" Margin="0,5,0,0"/>
       </StackPanel>
       <StackPanel Grid.Column="1" Margin="6,0,12,0">
         <TextBlock Text="Processing Scope" FontWeight="Bold"/>

@@ -2,7 +2,7 @@
 """Single WPF application host for the pure pyRevit extension."""
 import os
 from pyrevit.framework import ObservableCollection
-from Autodesk.Revit.DB import Transaction
+from Autodesk.Revit.DB import StorageType, Transaction
 from pyrevit import forms, revit
 from rdm.geometry.bounds import calculate_from_boundary
 from rdm.parameters.service import ParameterService
@@ -29,6 +29,7 @@ class MainWindow(forms.WPFWindow):
         self.rows = ObservableCollection[RoomResult]()
         self.results_grid.ItemsSource = self.rows
         self.document_label.Text = revit.doc.Title
+        self._populate_parameter_lists()
         self.status.Text = "Ready. Cross Check is non-destructive."
         self.run_button.Click += self.run
         self.export_button.Click += self.export_csv
@@ -38,14 +39,39 @@ class MainWindow(forms.WPFWindow):
     def _choice(self, control):
         return str(control.SelectedItem.Content)
 
+    def _populate_parameter_lists(self):
+        """List only writable-compatible Length parameters bound to Rooms."""
+        names = set()
+        try:
+            rooms = RoomService(revit.doc).get_rooms("Entire Project")
+            for room in rooms:
+                for parameter in room.Parameters:
+                    if parameter.StorageType == StorageType.Double:
+                        names.add(parameter.Definition.Name)
+        except Exception:
+            pass
+        values = sorted(names)
+        self.length_parameter.ItemsSource = values
+        self.width_parameter.ItemsSource = values
+        if "Length" in values:
+            self.length_parameter.SelectedItem = "Length"
+        elif values:
+            self.length_parameter.SelectedIndex = 0
+        if "Width" in values:
+            self.width_parameter.SelectedItem = "Width"
+        elif len(values) > 1:
+            self.width_parameter.SelectedIndex = 1
+        elif values:
+            self.width_parameter.SelectedIndex = 0
+
     def run(self, sender, args):
         try:
             tolerance = float(self.tolerance.Text)
         except ValueError:
             forms.alert("Tolerance must be a number in feet.", title="Room Dimension Manager")
             return
-        length_name = self.length_parameter.Text.strip()
-        width_name = self.width_parameter.Text.strip()
+        length_name = str(self.length_parameter.SelectedItem or "").strip()
+        width_name = str(self.width_parameter.SelectedItem or "").strip()
         if not length_name or not width_name:
             forms.alert("Provide both parameter names.", title="Room Dimension Manager")
             return
