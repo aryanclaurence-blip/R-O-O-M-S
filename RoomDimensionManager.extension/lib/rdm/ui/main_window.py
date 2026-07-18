@@ -78,6 +78,7 @@ class MainWindow(forms.WPFWindow):
             forms.alert("Provide both parameter names.", title="Room Dimension Manager")
             return
         operation = self._choice(self.operation)
+        length_rule = self._choice(self.length_rule)
         service = RoomService(revit.doc)
         rooms = service.get_rooms(self._choice(self.scope), revit.get_selection().element_ids)
         self.rows.Clear()
@@ -89,7 +90,7 @@ class MainWindow(forms.WPFWindow):
         try:
             for room in rooms:
                 try:
-                    dimensions = calculate_from_boundary(service.get_outer_boundary(room))
+                    dimensions = calculate_from_boundary(service.get_outer_boundary(room), length_rule)
                     old_length = parameter_service.read(room, length_name)
                     old_width = parameter_service.read(room, width_name)
                     if transaction:

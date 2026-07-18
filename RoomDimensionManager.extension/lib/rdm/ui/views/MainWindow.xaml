@@ -30,7 +30,9 @@
       </StackPanel>
       <StackPanel Grid.Column="2" Margin="6,0,0,0">
         <TextBlock Text="Operation" FontWeight="Bold"/>
-        <ComboBox x:Name="operation" SelectedIndex="0" Margin="0,5,0,0"><ComboBoxItem Content="Cross Check"/><ComboBoxItem Content="Set Room Dimensions"/></ComboBox>
+        <ComboBox x:Name="operation" SelectedIndex="0" Margin="0,5,0,10"><ComboBoxItem Content="Cross Check"/><ComboBoxItem Content="Set Room Dimensions"/></ComboBox>
+        <TextBlock Text="Length (X) Rule" FontWeight="Bold"/>
+        <ComboBox x:Name="length_rule" SelectedIndex="0" Margin="0,5,0,0"><ComboBoxItem Content="Largest"/><ComboBoxItem Content="Smallest"/><ComboBoxItem Content="Average"/></ComboBox>
       </StackPanel>
     </Grid>
     <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">

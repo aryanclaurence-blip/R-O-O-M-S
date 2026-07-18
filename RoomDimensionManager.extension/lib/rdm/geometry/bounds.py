@@ -9,7 +9,7 @@ class RoomDimensions(object):
         self.classification = classification
 
 
-def calculate_from_boundary(segments):
+def calculate_from_boundary(segments, length_rule="Largest"):
     points = []
     for segment in segments:
         curve = segment.GetCurve()
@@ -23,5 +23,16 @@ def calculate_from_boundary(segments):
     y_size = max(ys) - min(ys)
     if x_size <= 0 or y_size <= 0:
         raise ValueError("Room boundary has no measurable extent.")
+    largest = max(x_size, y_size)
+    smallest = min(x_size, y_size)
+    if length_rule == "Smallest":
+        length = smallest
+        width = largest
+    elif length_rule == "Average":
+        length = (x_size + y_size) / 2.0
+        width = length
+    else:
+        length = largest
+        width = smallest
     classification = "Rectangle" if len(segments) == 4 else "Polygon"
-    return RoomDimensions(max(x_size, y_size), min(x_size, y_size), classification)
+    return RoomDimensions(length, width, classification)
