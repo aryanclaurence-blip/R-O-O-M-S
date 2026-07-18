@@ -12,6 +12,7 @@ from rdm.revit.room_service import RoomService
 
 class RoomResult(object):
     def __init__(self, room, dimensions, stored_length, stored_width, result):
+        self.ElementId = room.Id.IntegerValue
         number = room.get_Parameter(BuiltInParameter.ROOM_NUMBER)
         name = room.get_Parameter(BuiltInParameter.ROOM_NAME)
         self.RoomNumber = number.AsString() if number and number.HasValue else ""
