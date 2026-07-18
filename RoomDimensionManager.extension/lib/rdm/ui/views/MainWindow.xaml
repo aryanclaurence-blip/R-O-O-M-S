@@ -17,9 +17,9 @@
     <Grid Grid.Row="1" Margin="0,0,0,14">
       <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
       <StackPanel Grid.Column="0" Margin="0,0,12,0">
-        <TextBlock Text="Length Parameter" FontWeight="Bold"/>
+        <TextBlock Text="Length Parameter (X)" FontWeight="Bold"/>
         <ComboBox x:Name="length_parameter" Margin="0,5,0,10"/>
-        <TextBlock Text="Width Parameter" FontWeight="Bold"/>
+        <TextBlock Text="Width Parameter (Y)" FontWeight="Bold"/>
         <ComboBox x:Name="width_parameter" Margin="0,5,0,0"/>
       </StackPanel>
       <StackPanel Grid.Column="1" Margin="6,0,12,0">
