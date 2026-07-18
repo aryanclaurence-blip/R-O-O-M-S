@@ -1,29 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Reporting models and CSV Exporters."""
-import logging
+"""CSV report export."""
 import csv
 
-logger = logging.getLogger(__name__)
 
-class CSVExporter:
-    """Generates CSV files for QA reporting."""
-    
-    def export(self, filepath, data):
-        """
-        Write the cross-check results to a CSV file.
-        
-        Args:
-            filepath (str): Output location.
-            data (List[Dict[str, Any]]): Serialized QA data.
-            
-        Returns:
-            bool: True if write succeeded.
-        """
-        if not data:
-            return False
-        with open(filepath, 'wb') as stream:
-            writer = csv.DictWriter(stream, fieldnames=data[0].keys())
-            writer.writeheader()
-            writer.writerows(data)
-        logger.info("Exported report to {0}".format(filepath))
-        return True
+def export(path, rows):
+    with open(path, 'wb') as stream:
+        writer = csv.writer(stream)
+        writer.writerow(["Room Number", "Room Name", "Classification", "Length (ft)", "Width (ft)", "Stored Length", "Stored Width", "Result"])
+        for row in rows:
+            writer.writerow([row.RoomNumber, row.RoomName, row.Classification,
+                             row.CalculatedLength, row.CalculatedWidth,
+                             row.StoredLength, row.StoredWidth, row.Result])

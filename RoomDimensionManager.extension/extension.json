@@ -1,7 +1,6 @@
-﻿{
+{
   "name": "Room Dimension Manager",
-  "description": "Enterprise-grade room dimension QA tool.",
+  "description": "Pure pyRevit room dimension manager",
   "author": "aryanclaurence",
-  "version": "1.0.0",
-  "url": "https://github.com/aryanclaurence-blip/R-O-O-M-S"
+  "version": "2.0.0"
 }

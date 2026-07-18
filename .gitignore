@@ -1,9 +1,5 @@
-﻿__pycache__/
-*.py[cod]
-*.class
+__pycache__/
+*.pyc
+*.pyo
 *.log
-debug_log.txt
-*.rvt.backup
-*.rfa.backup
-.env
-local_settings.ini
+*.csv

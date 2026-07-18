@@ -1,4 +1,2 @@
 # -*- coding: utf-8 -*-
-"""
-Root Package
-"""
+"""Room Dimension Manager domain package."""
