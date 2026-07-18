@@ -1,0 +1,3 @@
+﻿# Changelog
+## [Unreleased]
+- Initial skeleton.
