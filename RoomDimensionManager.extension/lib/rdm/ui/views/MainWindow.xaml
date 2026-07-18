@@ -1,8 +1,76 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Room Dimension Manager" Height="700" Width="1050"
+        Title="Room Dimension Manager" Height="700" Width="1100"
         WindowStartupLocation="CenterScreen" FontFamily="Segoe UI">
-  <Grid Margin="18">
+    <Window.Resources>
+        <Style TargetType="ToggleButton" x:Key="FilterIconStyle">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#E5F3FF"/>
+                                <Setter Property="BorderBrush" Value="#CCE8FF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#CCE8FF"/>
+                                <Setter Property="BorderBrush" Value="#0078D7"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="#CCE8FF"/>
+                                <Setter Property="BorderBrush" Value="#0078D7"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="AlternatingRowBackground" Value="#F9F9F9"/>
+            <Setter Property="RowHeight" Value="26"/>
+            <Setter Property="ColumnHeaderHeight" Value="30"/>
+            <Setter Property="BorderBrush" Value="#D9D9D9"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#EAEAEA"/>
+            <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="SelectionMode" Value="Extended"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="BorderBrush" Value="#D9D9D9"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="Padding" Value="8,0,8,0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style TargetType="DataGridRow">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#CCE8FF"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    
+  <Grid Margin="16">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
@@ -10,49 +78,124 @@
       <RowDefinition Height="*"/>
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
-    <StackPanel Grid.Row="0" Margin="0,0,0,14">
-      <TextBlock Text="Room Dimension Manager" FontSize="25" FontWeight="SemiBold"/>
+    
+    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+      <TextBlock Text="Room Dimension Manager" FontSize="24" FontWeight="SemiBold"/>
       <TextBlock x:Name="document_label" Foreground="DimGray"/>
     </StackPanel>
-    <Grid Grid.Row="1" Margin="0,0,0,14">
-      <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
-      <StackPanel Grid.Column="0" Margin="0,0,12,0">
-        <TextBlock Text="Length Parameter (X)" FontWeight="Bold"/>
-        <ComboBox x:Name="length_parameter" Margin="0,5,0,10"/>
-        <TextBlock Text="Width Parameter (Y)" FontWeight="Bold"/>
-        <ComboBox x:Name="width_parameter" Margin="0,5,0,0"/>
-      </StackPanel>
-      <StackPanel Grid.Column="1" Margin="6,0,12,0">
-        <TextBlock Text="Processing Scope" FontWeight="Bold"/>
-        <ComboBox x:Name="scope" SelectedIndex="0" Margin="0,5,0,10"><ComboBoxItem Content="Entire Project"/><ComboBoxItem Content="Selected Rooms"/></ComboBox>
-        <TextBlock Text="Tolerance (ft)" FontWeight="Bold"/>
-        <TextBox x:Name="tolerance" Text="0.01" Margin="0,5,0,0"/>
-      </StackPanel>
-      <StackPanel Grid.Column="2" Margin="6,0,0,0">
-        <TextBlock Text="Operation" FontWeight="Bold"/>
-        <ComboBox x:Name="operation" SelectedIndex="0" Margin="0,5,0,10"><ComboBoxItem Content="Cross Check"/><ComboBoxItem Content="Set Room Dimensions"/></ComboBox>
-        <TextBlock Text="Length (X) Rule" FontWeight="Bold"/>
-        <ComboBox x:Name="length_rule" SelectedIndex="0" Margin="0,5,0,0"><ComboBoxItem Content="Largest"/><ComboBoxItem Content="Smallest"/><ComboBoxItem Content="Average"/></ComboBox>
-      </StackPanel>
+    
+    <Grid Grid.Row="1" Margin="0,0,0,16">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition/>
+        <ColumnDefinition/>
+        <ColumnDefinition/>
+      </Grid.ColumnDefinitions>
+      
+      <GroupBox Grid.Column="0" Header="PARAMETERS" Margin="0,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
+        <StackPanel>
+          <TextBlock Text="Length Parameter (X)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+          <ComboBox x:Name="length_parameter" Margin="0,0,0,12" Height="24"/>
+          <TextBlock Text="Width Parameter (Y)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+          <ComboBox x:Name="width_parameter" Margin="0,0,0,12" Height="24"/>
+          <TextBlock Text="Tolerance (ft)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+          <TextBox x:Name="tolerance" Text="0.01" Height="24"/>
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox Grid.Column="1" Header="FILTERS" Margin="8,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
+        <StackPanel>
+          <TextBlock Text="Processing Scope" FontWeight="SemiBold" Margin="0,0,0,4"/>
+          <ComboBox x:Name="scope" SelectedIndex="0" Margin="0,0,0,12" Height="24">
+            <ComboBoxItem Content="Entire Project"/>
+            <ComboBoxItem Content="Current View"/>
+            <ComboBoxItem Content="Selected Rooms"/>
+          </ComboBox>
+          
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,8" x:Name="filter_panel" IsEnabled="False">
+            <ToggleButton x:Name="filter_user" Style="{StaticResource FilterIconStyle}" ToolTip="Process only rooms manually selected in Revit.">
+                <Path Data="M5,3 L5,17 L9,13 L13,20 L15,19 L11,12 L17,12 Z" Fill="#555555" Stretch="Uniform" Width="14" Height="14"/>
+            </ToggleButton>
+            <ToggleButton x:Name="filter_rect" Style="{StaticResource FilterIconStyle}" ToolTip="Exactly four straight boundary segments. Opposite sides parallel.">
+                <Path Data="M3,5 L17,5 L17,15 L3,15 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14"/>
+            </ToggleButton>
+            <ToggleButton x:Name="filter_quad" Style="{StaticResource FilterIconStyle}" ToolTip="Exactly four straight boundary segments but not a rectangle.">
+                <Path Data="M4,15 L7,5 L17,5 L14,15 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14"/>
+            </ToggleButton>
+            <ToggleButton x:Name="filter_poly" Style="{StaticResource FilterIconStyle}" ToolTip="More than four straight boundary segments.">
+                <Path Data="M4,4 L10,4 L10,10 L16,10 L16,16 L4,16 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14"/>
+            </ToggleButton>
+            <ToggleButton x:Name="filter_curve" Style="{StaticResource FilterIconStyle}" ToolTip="Contains arcs, circles, ellipses, splines or any curved boundary.">
+                <Path Data="M4,15 L4,8 A6,6 0 0,1 16,8 L16,15 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14"/>
+            </ToggleButton>
+            <Button x:Name="filter_clear" Width="24" Height="24" Margin="4,0,0,0" ToolTip="Clear Filter" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                <Path Data="M4,4 L16,16 M16,4 L4,16" Stroke="#E81123" StrokeThickness="1.5" Stretch="Uniform" Width="12" Height="12"/>
+            </Button>
+          </StackPanel>
+          
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" x:Name="pick_rooms_button" Content="Pick Rooms" Width="90" Height="24" Visibility="Collapsed"/>
+            <TextBlock Grid.Column="1" x:Name="rooms_found_text" Text="" FontWeight="SemiBold" Foreground="#005A9E" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+          </Grid>
+        </StackPanel>
+      </GroupBox>
+      
+      <GroupBox Grid.Column="2" Header="OPERATION" Margin="8,0,0,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
+        <StackPanel>
+          <TextBlock Text="Operation" FontWeight="SemiBold" Margin="0,0,0,4"/>
+          <ComboBox x:Name="operation" SelectedIndex="0" Margin="0,0,0,12" Height="24">
+            <ComboBoxItem Content="Cross Check"/>
+            <ComboBoxItem Content="Set Room Dimensions"/>
+          </ComboBox>
+          <TextBlock Text="Length (X) Rule" FontWeight="SemiBold" Margin="0,0,0,4"/>
+          <ComboBox x:Name="length_rule" SelectedIndex="0" Margin="0,0,0,12" Height="24">
+            <ComboBoxItem Content="Largest"/>
+            <ComboBoxItem Content="Smallest"/>
+            <ComboBoxItem Content="Average"/>
+          </ComboBox>
+          <TextBlock Text="Width (Y) Rule" FontWeight="SemiBold" Margin="0,0,0,4"/>
+          <ComboBox x:Name="width_rule" SelectedIndex="1" Height="24">
+            <ComboBoxItem Content="Largest"/>
+            <ComboBoxItem Content="Smallest"/>
+            <ComboBoxItem Content="Average"/>
+          </ComboBox>
+        </StackPanel>
+      </GroupBox>
     </Grid>
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">
-      <Button x:Name="run_button" Content="Run" Width="130" Height="32" Margin="0,0,8,0"/>
-      <Button x:Name="export_button" Content="Export CSV" Width="130" Height="32" Margin="0,0,8,0"/>
-      <Button x:Name="settings_button" Content="Settings" Width="100" Height="32" Margin="0,0,8,0"/>
-      <Button x:Name="help_button" Content="Help" Width="100" Height="32"/>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,16">
+      <Button x:Name="run_button" Content="Run" Width="100" Height="26" Margin="0,0,8,0"/>
+      <Button x:Name="highlight_button" Content="Highlight" Width="100" Height="26" Margin="0,0,8,0" IsEnabled="False"/>
+      <Button x:Name="remove_highlight_button" Content="Remove Highlight" Width="120" Height="26" Margin="0,0,16,0" IsEnabled="False"/>
+      <Button x:Name="export_button" Content="Export CSV" Width="100" Height="26" Margin="0,0,8,0"/>
+      <Button x:Name="settings_button" Content="Settings" Width="100" Height="26" Margin="0,0,8,0"/>
+      <Button x:Name="help_button" Content="Help" Width="100" Height="26"/>
     </StackPanel>
-    <DataGrid Grid.Row="3" x:Name="results_grid" AutoGenerateColumns="False" IsReadOnly="True">
-      <DataGrid.Columns>
-        <DataGridTextColumn Header="Number" Binding="{Binding RoomNumber}" Width="90"/>
-        <DataGridTextColumn Header="Name" Binding="{Binding RoomName}" Width="*"/>
-        <DataGridTextColumn Header="Shape" Binding="{Binding Classification}" Width="120"/>
-        <DataGridTextColumn Header="Length (ft)" Binding="{Binding CalculatedLength}" Width="100"/>
-        <DataGridTextColumn Header="Width (ft)" Binding="{Binding CalculatedWidth}" Width="100"/>
-        <DataGridTextColumn Header="Stored L" Binding="{Binding StoredLength}" Width="100"/>
-        <DataGridTextColumn Header="Stored W" Binding="{Binding StoredWidth}" Width="100"/>
-        <DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="140"/>
-      </DataGrid.Columns>
-    </DataGrid>
-    <TextBlock Grid.Row="4" x:Name="status" Margin="0,10,0,0" Foreground="DimGray"/>
+    
+    <GroupBox Grid.Row="3" Header="RESULTS" BorderBrush="#D9D9D9" BorderThickness="1" Padding="0">
+      <DataGrid x:Name="results_grid" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Number" Binding="{Binding RoomNumber}" Width="90"/>
+          <DataGridTextColumn Header="Name" Binding="{Binding RoomName}" Width="*"/>
+          <DataGridTextColumn Header="Shape" Binding="{Binding Classification}" Width="160"/>
+          <DataGridTextColumn Header="Length (ft)" Binding="{Binding CalculatedLength}" Width="100"/>
+          <DataGridTextColumn Header="Width (ft)" Binding="{Binding CalculatedWidth}" Width="100"/>
+          <DataGridTextColumn Header="Stored L" Binding="{Binding StoredLength}" Width="100"/>
+          <DataGridTextColumn Header="Stored W" Binding="{Binding StoredWidth}" Width="100"/>
+          <DataGridTemplateColumn Header="Result" Width="160">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Result}" Foreground="{Binding ResultColor}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+        </DataGrid.Columns>
+      </DataGrid>
+    </GroupBox>
+    
+    <TextBlock Grid.Row="4" x:Name="status" Margin="0,8,0,0" Foreground="DimGray"/>
   </Grid>
 </Window>
