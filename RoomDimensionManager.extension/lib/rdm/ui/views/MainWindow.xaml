@@ -97,8 +97,8 @@
           <ComboBox x:Name="length_parameter" Margin="0,0,0,12" Height="24"/>
           <TextBlock Text="Width Parameter (Y)" FontWeight="SemiBold" Margin="0,0,0,4"/>
           <ComboBox x:Name="width_parameter" Margin="0,0,0,12" Height="24"/>
-          <TextBlock Text="Tolerance (ft)" FontWeight="SemiBold" Margin="0,0,0,4"/>
-          <TextBox x:Name="tolerance" Text="0.01" Height="24"/>
+          <TextBlock x:Name="label_tolerance" Text="Tolerance" FontWeight="SemiBold" Margin="0,0,0,4"/>
+          <TextBox x:Name="tolerance" Text="0.00" Height="24"/>
         </StackPanel>
       </GroupBox>
 
@@ -108,27 +108,30 @@
           <ComboBox x:Name="scope" SelectedIndex="0" Margin="0,0,0,12" Height="24">
             <ComboBoxItem Content="Entire Project"/>
             <ComboBoxItem Content="Current View"/>
-            <ComboBoxItem Content="Selected Rooms"/>
+            <ComboBoxItem Content="Linked Models"/>
+            <ComboBoxItem Content="All Models"/>
           </ComboBox>
+          
+          <Button x:Name="select_links_button" Content="▼ Select Models..." Height="24" Margin="0,0,0,12" Visibility="Collapsed"/>
           
           <StackPanel Orientation="Horizontal" Margin="0,0,0,8" x:Name="filter_panel" IsEnabled="False">
             <ToggleButton x:Name="filter_user" Style="{StaticResource FilterIconStyle}" ToolTip="Process only rooms manually selected in Revit.">
-                <Path Data="M5,3 L5,17 L9,13 L13,20 L15,19 L11,12 L17,12 Z" Fill="#555555" Stretch="Uniform" Width="14" Height="14"/>
+                <Path Data="M 7,3 L 7,20 L 11,15 L 15,22 L 18,21 L 14,14 L 20,14 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="18" Height="18"/>
             </ToggleButton>
             <ToggleButton x:Name="filter_rect" Style="{StaticResource FilterIconStyle}" ToolTip="Exactly four straight boundary segments. Opposite sides parallel.">
-                <Path Data="M3,5 L17,5 L17,15 L3,15 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14"/>
+                <Path Data="M 2,6 L 22,6 L 22,18 L 2,18 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="18" Height="18"/>
             </ToggleButton>
             <ToggleButton x:Name="filter_quad" Style="{StaticResource FilterIconStyle}" ToolTip="Exactly four straight boundary segments but not a rectangle.">
-                <Path Data="M4,15 L7,5 L17,5 L14,15 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14"/>
+                <Path Data="M 5,18 L 9,6 L 22,6 L 18,18 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="18" Height="18"/>
             </ToggleButton>
             <ToggleButton x:Name="filter_poly" Style="{StaticResource FilterIconStyle}" ToolTip="More than four straight boundary segments.">
-                <Path Data="M4,4 L10,4 L10,10 L16,10 L16,16 L4,16 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14"/>
+                <Path Data="M 12,2 L 21,7 L 21,17 L 12,22 L 3,17 L 3,7 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="18" Height="18"/>
             </ToggleButton>
             <ToggleButton x:Name="filter_curve" Style="{StaticResource FilterIconStyle}" ToolTip="Contains arcs, circles, ellipses, splines or any curved boundary.">
-                <Path Data="M4,15 L4,8 A6,6 0 0,1 16,8 L16,15 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14"/>
+                <Path Data="M 4,20 L 4,10 A 8,8 0 0,1 20,10 L 20,20 Z" Stroke="#555555" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="18" Height="18"/>
             </ToggleButton>
-            <Button x:Name="filter_clear" Width="24" Height="24" Margin="4,0,0,0" ToolTip="Clear Filter" Background="Transparent" BorderThickness="0" Cursor="Hand">
-                <Path Data="M4,4 L16,16 M16,4 L4,16" Stroke="#E81123" StrokeThickness="1.5" Stretch="Uniform" Width="12" Height="12"/>
+            <Button x:Name="filter_clear" Width="24" Height="24" Margin="8,0,0,0" ToolTip="Clear Filter" Background="Transparent" BorderThickness="0" Cursor="Hand">
+                <Path Data="M 4,4 L 20,20 M 20,4 L 4,20" Stroke="#E81123" StrokeThickness="2" Stretch="Uniform" Width="14" Height="14"/>
             </Button>
           </StackPanel>
           
@@ -138,8 +141,9 @@
               <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" x:Name="pick_rooms_button" Content="Pick Rooms" Width="90" Height="24" Visibility="Collapsed"/>
-            <TextBlock Grid.Column="1" x:Name="rooms_found_text" Text="" FontWeight="SemiBold" Foreground="#005A9E" HorizontalAlignment="Right" VerticalAlignment="Center"/>
           </Grid>
+          <Separator Margin="0,8,0,8"/>
+          <TextBlock x:Name="rooms_found_text" Text="Rooms Found: 0" FontWeight="SemiBold" Foreground="#005A9E" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         </StackPanel>
       </GroupBox>
       
@@ -176,15 +180,16 @@
     </StackPanel>
     
     <GroupBox Grid.Row="3" Header="RESULTS" BorderBrush="#D9D9D9" BorderThickness="1" Padding="0">
-      <DataGrid x:Name="results_grid" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0">
+      <DataGrid x:Name="results_grid" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0" MouseDoubleClick="on_results_double_click">
         <DataGrid.Columns>
           <DataGridTextColumn Header="Number" Binding="{Binding RoomNumber}" Width="90"/>
           <DataGridTextColumn Header="Name" Binding="{Binding RoomName}" Width="*"/>
+          <DataGridTextColumn x:Name="col_model" Header="Model" Binding="{Binding DocumentName}" Width="120" Visibility="Visible"/>
           <DataGridTextColumn Header="Shape" Binding="{Binding Classification}" Width="160"/>
-          <DataGridTextColumn Header="Length (ft)" Binding="{Binding CalculatedLength}" Width="100"/>
-          <DataGridTextColumn Header="Width (ft)" Binding="{Binding CalculatedWidth}" Width="100"/>
-          <DataGridTextColumn Header="Stored L" Binding="{Binding StoredLength}" Width="100"/>
-          <DataGridTextColumn Header="Stored W" Binding="{Binding StoredWidth}" Width="100"/>
+          <DataGridTextColumn x:Name="col_length" Header="Length" Binding="{Binding CalculatedLengthDisplay}" Width="100"/>
+          <DataGridTextColumn x:Name="col_width" Header="Width" Binding="{Binding CalculatedWidthDisplay}" Width="100"/>
+          <DataGridTextColumn x:Name="col_stored_length" Header="Stored L" Binding="{Binding StoredLengthDisplay}" Width="100"/>
+          <DataGridTextColumn x:Name="col_stored_width" Header="Stored W" Binding="{Binding StoredWidthDisplay}" Width="100"/>
           <DataGridTemplateColumn Header="Result" Width="160">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
