@@ -19,7 +19,7 @@ def calculate_from_boundary(segments, algorithm="Opposite Wall Average (Default)
     
     for curve in curves:
         points.extend(curve.Tessellate())
-        if isinstance(curve, Line):
+        if hasattr(curve, "Direction"):
             directions.append(curve.Direction.Normalize())
             lines.append(curve)
 
