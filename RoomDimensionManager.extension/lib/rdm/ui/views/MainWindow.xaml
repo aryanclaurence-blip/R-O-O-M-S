@@ -152,6 +152,11 @@
             <ComboBoxItem Content="Cross Check"/>
             <ComboBoxItem Content="Set Room Dimensions"/>
           </ComboBox>
+          <TextBlock Text="Measurement Algorithm" FontWeight="SemiBold" Margin="0,0,0,4"/>
+          <ComboBox x:Name="measurement_algorithm" SelectedIndex="0" Margin="0,0,0,12" Height="24">
+            <ComboBoxItem Content="Opposite Wall Average (Default)"/>
+            <ComboBoxItem Content="Minimum Area Bounding Rectangle (MABR)"/>
+          </ComboBox>
           <TextBlock Text="Length (X) Rule" FontWeight="SemiBold" Margin="0,0,0,4"/>
           <ComboBox x:Name="length_rule" SelectedIndex="0" Margin="0,0,0,12" Height="24">
             <ComboBoxItem Content="Largest"/>

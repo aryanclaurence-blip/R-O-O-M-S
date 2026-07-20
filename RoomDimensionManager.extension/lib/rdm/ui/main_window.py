@@ -362,6 +362,10 @@ class MainWindow(forms.WPFWindow):
         length_rule = self._choice(self.length_rule)
         width_rule = self._choice(self.width_rule)
         operation = self._choice(self.operation)
+        try:
+            algorithm = self._choice(self.measurement_algorithm)
+        except AttributeError:
+            algorithm = "Opposite Wall Average (Default)"
         
         if not length_name or not width_name:
             forms.alert("Provide both parameter names.", title="Room Dimension Manager")
@@ -399,7 +403,7 @@ class MainWindow(forms.WPFWindow):
                     except Exception:
                         pass
                 
-                dimensions = calculate_from_boundary(boundary, length_rule, width_rule)
+                dimensions = calculate_from_boundary(boundary, algorithm, length_rule, width_rule)
                 old_length = p_service.read(room, length_name)
                 old_width = p_service.read(room, width_name)
                 
