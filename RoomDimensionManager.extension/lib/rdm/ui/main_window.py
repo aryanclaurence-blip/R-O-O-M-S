@@ -91,7 +91,7 @@ class MainWindow(forms.WPFWindow):
                 self.col_length.Header = "Length ({0})".format(sym)
             if hasattr(self, 'col_width'):
                 self.col_width.Header = "Width ({0})".format(sym)
-        self.status.Text = "Ready | Rooms: 0"
+        self.set_status("Ready")
         if hasattr(self, 'tolerance'):
             self.tolerance.Text = "0.00"
         self.run_button.Click += self.run
@@ -149,6 +149,10 @@ class MainWindow(forms.WPFWindow):
         if self.filter_poly.IsChecked: return "Complex Polygon"
         if self.filter_curve.IsChecked: return "Curved Geometry"
         return None
+
+    def set_status(self, message):
+        count = self.rows.Count if hasattr(self, 'rows') else 0
+        self.status.Text = "{} | Rooms: {}".format(message, count)
 
     def on_scope_changed(self, sender, args):
         scope_name = self._choice(self.scope)
@@ -258,8 +262,7 @@ class MainWindow(forms.WPFWindow):
         start_time = time.time()
         
         self.rows.Clear()
-        self.rooms_found_text.Text = "Rooms Found: 0"
-        self.status.Text = "Collecting Rooms..."
+        self.set_status("Collecting Rooms...")
         self.highlight_button.IsEnabled = False
         self.remove_highlight_button.IsEnabled = False
         System.Windows.Forms.Application.DoEvents() if hasattr(System.Windows.Forms, 'Application') else None
@@ -272,7 +275,7 @@ class MainWindow(forms.WPFWindow):
         if scope_name in ["Current View", "Entire Project"]:
             if scope_name == "Selected Rooms":
                 forms.alert("No rooms are currently selected. Click 'Pick Rooms' to select rooms from the model.", title="Room Filter")
-                self.status.Text = "Operation Cancelled"
+                self.set_status("Operation Cancelled")
                 return
             docs_to_process.append((revit.doc, "Host", False))
         elif scope_name in ["Linked Models", "All Models"]:
@@ -280,7 +283,7 @@ class MainWindow(forms.WPFWindow):
                 self.on_select_links_clicked(None, None)
             
             if not self._selected_links:
-                self.status.Text = "Operation Cancelled"
+                self.set_status("Operation Cancelled")
                 return
                 
             if scope_name == "All Models":
@@ -339,12 +342,10 @@ class MainWindow(forms.WPFWindow):
                 "All Models": "No rooms were found in any model."
             }
             forms.alert(msgs.get(scope_name, "No rooms were found for the selected Processing Scope."), title="Room Dimension Manager")
-            self.status.Text = "Completed"
+            self.set_status("Completed")
             return
 
-        self.rooms_found_text.Text = "Rooms Found: {0}".format(len(filtered_rooms))
-        
-        self.status.Text = "Calculating Dimensions..."
+        self.set_status("Calculating Geometry...")
         System.Windows.Forms.Application.DoEvents() if hasattr(System.Windows.Forms, 'Application') else None
         
         session.start_timer()
@@ -460,7 +461,7 @@ class MainWindow(forms.WPFWindow):
         
         # 5. Handle "Set Room Dimensions"
         if operation == "Set Room Dimensions":
-            self.status.Text = "Writing Parameters..."
+            self.set_status("Writing Parameters...")
             System.Windows.Forms.Application.DoEvents() if hasattr(System.Windows.Forms, 'Application') else None
             session.start_timer()
             parameter_service = ParameterService(revit.doc)
@@ -503,7 +504,7 @@ class MainWindow(forms.WPFWindow):
             self.highlight_button.IsEnabled = True
             self.remove_highlight_button.IsEnabled = False
             
-        self.status.Text = "Loading Results..."
+        self.set_status("Loading Results...")
         System.Windows.Forms.Application.DoEvents() if hasattr(System.Windows.Forms, 'Application') else None
         
         # Validate grid
@@ -541,7 +542,7 @@ class MainWindow(forms.WPFWindow):
             print("UPDATED : {}".format(counts["UPDATED"]))
             print("READ ONLY : {}".format(counts["READ ONLY"]))
             print("USER REVIEW : {}".format(counts["USER REVIEW"]))
-            print("GEOMETRY ERROR : {}".format(counts["GEOMETRY ERROR"]))
+            print("GEOMETRY ERRORS : {}".format(counts["GEOMETRY ERROR"]))
             
         # Sort rows based on Result: FAIL > UPDATED > PASS > READ ONLY > GEOMETRY ERROR
         sort_order = {"FAIL": 0, "UPDATED": 1, "PASS": 2, "READ ONLY": 3, "GEOMETRY ERROR": 4}
@@ -589,9 +590,9 @@ class MainWindow(forms.WPFWindow):
         from pyrevit import script
         script.get_output().print_html("<pre>" + summary + "</pre>")
         
-        self.status.Text = "Completed"
+        self.set_status("Completed")
         if session.errors:
-            forms.alert("Errors Encountered: {}\n\nPlease inspect the pyRevit Output Window for details.".format(len(session.errors)), title="Errors Detected")
+            self.set_status("Completed with {} errors. See log if enabled.".format(len(session.errors)))
 
     def highlight(self, sender, args):
         if self.rows.Count == 0:
@@ -601,11 +602,11 @@ class MainWindow(forms.WPFWindow):
             revit.uidoc.RefreshActiveView()
             self.remove_highlight_button.IsEnabled = True
             if success_count == 0:
-                self.status.Text = "No rooms require highlighting."
+                self.set_status("No rooms require highlighting.")
             else:
-                self.status.Text = "Highlights applied to {0} rooms.".format(success_count)
+                self.set_status("Applying Highlights...")
         except Exception as e:
-            forms.alert(str(e), title="Highlight Error")
+            self.set_status("Error: {}".format(e))
 
     def remove_highlight(self, sender, args):
         try:
@@ -613,7 +614,7 @@ class MainWindow(forms.WPFWindow):
             revit.uidoc.RefreshActiveView()
             self.remove_highlight_button.IsEnabled = False
             self.highlight_button.IsEnabled = True
-            self.status.Text = "Highlights removed."
+            self.set_status("Highlights Removed")
         except Exception as e:
             forms.alert(str(e), title="Remove Highlight Error")
 

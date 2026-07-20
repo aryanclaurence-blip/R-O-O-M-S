@@ -142,8 +142,6 @@
             </Grid.ColumnDefinitions>
             <Button Grid.Column="0" x:Name="pick_rooms_button" Content="Pick Rooms" Width="90" Height="24" Visibility="Collapsed"/>
           </Grid>
-          <Separator Margin="0,8,0,8"/>
-          <TextBlock x:Name="rooms_found_text" Text="Rooms Found: 0" FontWeight="SemiBold" Foreground="#005A9E" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         </StackPanel>
       </GroupBox>
       
