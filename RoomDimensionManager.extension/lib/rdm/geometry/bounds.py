@@ -41,11 +41,8 @@ def calculate_from_boundary(segments, algorithm="Opposite Wall Average (Default)
         else:  # Largest
             return max(values)
 
-    best_x_size = 0.0
-    best_y_size = 0.0
-
     # ALGORITHM 1: OPPOSITE WALL AVERAGE
-    if "Opposite Wall" in algorithm and len(lines) >= 4:
+    if "Opposite Wall" in algorithm:
         # Group lines by orientation
         groups = []
         for line in lines:
@@ -60,52 +57,48 @@ def calculate_from_boundary(segments, algorithm="Opposite Wall Average (Default)
             if not placed:
                 groups.append({'dir': v, 'lengths': [length]})
         
-        # We need exactly two orthogonal dominant groups to proceed with this algorithm
-        # Sort groups by number of lines to find the primary axes
+        # Sort groups by total length to find the primary axes
         groups.sort(key=lambda x: sum(x['lengths']), reverse=True)
         
+        # We need exactly two orthogonal dominant groups to proceed with this algorithm
         if len(groups) >= 2 and abs(groups[0]['dir'].DotProduct(groups[1]['dir'])) < 0.05:
-            # We found X and Y directions
             x_walls = groups[0]['lengths']
             y_walls = groups[1]['lengths']
             
-            # Is it a standard four-sided room?
-            if len(segments) == 4 and len(x_walls) == 2 and len(y_walls) == 2:
-                # Force Average for standard 4-sided rooms
-                x_cand = sum(x_walls) / 2.0
-                y_cand = sum(y_walls) / 2.0
-            else:
-                # Irregular rooms: Apply rules independently to wall collections
-                x_cand = apply_rule(x_walls, length_rule)
-                y_cand = apply_rule(y_walls, width_rule)
-                
-            best_x_size = x_cand
-            best_y_size = y_cand
+            final_length = apply_rule(x_walls, length_rule)
+            final_width = apply_rule(y_walls, width_rule)
+        else:
+            raise ValueError("Opposite Wall Average requires at least two orthogonal wall directions.")
 
-    # ALGORITHM 2: MABR (or fallback if Opposite Wall conditions not met)
-    if best_x_size == 0.0 or best_y_size == 0.0:
-        min_area = float('inf')
+        from rdm.classification.engine import RoomClassificationEngine
+        classification = RoomClassificationEngine.classify(segments)
+        return RoomDimensions(final_length, final_width, classification)
+
+    # ALGORITHM 2: MINIMUM AREA BOUNDING RECTANGLE (MABR)
+    min_area = float('inf')
+    best_x_size = 0.0
+    best_y_size = 0.0
+    
+    # Test each straight segment direction as the primary axis
+    for dir_x in directions:
+        dir_y = XYZ(-dir_x.Y, dir_x.X, 0).Normalize()
         
-        # Test each straight segment direction as the primary axis
-        for dir_x in directions:
-            dir_y = XYZ(-dir_x.Y, dir_x.X, 0).Normalize()
-            
-            xs = [pt.DotProduct(dir_x) for pt in points]
-            ys = [pt.DotProduct(dir_y) for pt in points]
-            
-            x_size = max(xs) - min(xs)
-            y_size = max(ys) - min(ys)
-            
-            area = x_size * y_size
-            if area < min_area:
-                min_area = area
-                best_x_size = x_size
-                best_y_size = y_size
+        xs = [pt.DotProduct(dir_x) for pt in points]
+        ys = [pt.DotProduct(dir_y) for pt in points]
+        
+        x_size = max(xs) - min(xs)
+        y_size = max(ys) - min(ys)
+        
+        area = x_size * y_size
+        if area < min_area:
+            min_area = area
+            best_x_size = x_size
+            best_y_size = y_size
 
     if best_x_size <= 0 or best_y_size <= 0:
         raise ValueError("Room boundary has no measurable extent.")
 
-    # Finally, apply Length and Width rules to the two candidate dimensions
+    # Apply Length and Width rules to the two candidate MABR dimensions
     final_length = apply_rule([best_x_size, best_y_size], length_rule)
     final_width = apply_rule([best_x_size, best_y_size], width_rule)
         
