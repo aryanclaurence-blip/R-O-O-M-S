@@ -43,32 +43,27 @@ def calculate_from_boundary(segments, algorithm="Opposite Wall Average (Default)
 
     # ALGORITHM 1: OPPOSITE WALL AVERAGE
     if "Opposite Wall" in algorithm:
-        # Group lines by orientation
-        groups = []
+        if not lines:
+            raise ValueError("Opposite Wall Average requires at least one straight wall.")
+            
+        # 1. Establish the dominant axis (X) using the longest straight wall
+        primary_line = max(lines, key=lambda l: l.Length)
+        x_dir = primary_line.Direction.Normalize()
+        
+        x_walls = []
+        y_walls = []
+        
+        # 2. Classify every straight wall into the X or Y bucket using a 45-degree split
         for line in lines:
             v = line.Direction.Normalize()
-            length = line.Length
-            placed = False
-            for g in groups:
-                if abs(v.DotProduct(g['dir'])) > 0.99:
-                    g['lengths'].append(length)
-                    placed = True
-                    break
-            if not placed:
-                groups.append({'dir': v, 'lengths': [length]})
-        
-        # Sort groups by total length to find the primary axes
-        groups.sort(key=lambda x: sum(x['lengths']), reverse=True)
-        
-        # We need exactly two orthogonal dominant groups to proceed with this algorithm
-        if len(groups) >= 2 and abs(groups[0]['dir'].DotProduct(groups[1]['dir'])) < 0.05:
-            x_walls = groups[0]['lengths']
-            y_walls = groups[1]['lengths']
-            
-            final_length = apply_rule(x_walls, length_rule)
-            final_width = apply_rule(y_walls, width_rule)
-        else:
-            raise ValueError("Opposite Wall Average requires at least two orthogonal wall directions.")
+            # cos(45 degrees) is approximately 0.707
+            if abs(v.DotProduct(x_dir)) >= 0.707:
+                x_walls.append(line.Length)
+            else:
+                y_walls.append(line.Length)
+                
+        final_length = apply_rule(x_walls, length_rule)
+        final_width = apply_rule(y_walls, width_rule)
 
         from rdm.classification.engine import RoomClassificationEngine
         classification = RoomClassificationEngine.classify(segments)
