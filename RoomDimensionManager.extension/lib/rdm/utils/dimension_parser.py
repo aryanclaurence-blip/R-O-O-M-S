@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Smart Dimension Parsing Engine for RoomPro pyRevit extension.
+"""Smart Dimension Parsing Engine for RoomPro pyRevit extension (v1.1).
 
 Parses arbitrary user-entered room dimension strings into structured ParseResult objects.
 Converts values to Revit internal decimal feet while strictly preserving order of appearance.
+Includes configurable separators and lightweight preview/validation generation.
 """
 import re
 
@@ -32,6 +33,33 @@ class ParseResult(object):
         self.ParseWarnings = parse_warnings if parse_warnings is not None else []
         self.ErrorMessage = error_message
 
+    def get_preview(self):
+        """Generate a human-readable text preview of the parse result."""
+        lines = []
+        lines.append("Original Value")
+        lines.append(self.OriginalInput)
+        lines.append("----------------------------------")
+        if self.Success:
+            lines.append("Dimension A    : {}".format(self.DimensionA))
+            lines.append("Dimension B    : {}".format(self.DimensionB))
+            lines.append("Detected Units : {}".format(self.ParsedUnits))
+            lines.append("Confidence     : {}".format(self.Confidence))
+            lines.append("Status         : \u2713 Parsed Successfully")
+        else:
+            lines.append("Status         : \u2716 Invalid Format")
+            lines.append("")
+            lines.append("Reason :")
+            lines.append("Unable to extract two valid numeric dimensions.")
+            lines.append("")
+            lines.append("Supported Examples:")
+            lines.append("\u2022 2.25m x 5.00m")
+            lines.append("\u2022 2.25m by 5.00m")
+            lines.append("\u2022 2250 x 5000")
+            lines.append("\u2022 2250mm x 5000mm")
+            lines.append("\u2022 10'-6\" x 12'-0\"")
+        lines.append("----------------------------------")
+        return "\n".join(lines)
+
     def __repr__(self):
         if self.Success:
             return ("<ParseResult Success=True DimA='{}' DimB='{}' InternalA={:.4f}ft InternalB={:.4f}ft "
@@ -45,6 +73,9 @@ class ParseResult(object):
 
 class SmartDimensionParser(object):
     INVALID_FORMAT = "Invalid Format"
+
+    # Centralized configurable collection of supported dimension separators
+    SUPPORTED_SEPARATORS = ['x', 'X', '×', 'by', '*', '/', ',', ';', ':', '-']
 
     # Conversion factors to decimal feet (Revit internal length unit)
     UNIT_TO_FEET = {
@@ -76,6 +107,20 @@ class SmartDimensionParser(object):
         'inch': 1.0 / 12.0,
         'inches': 1.0 / 12.0,
     }
+
+    @classmethod
+    def format_preview(cls, result_or_input, unit_helper=None):
+        """Lightweight validation helper that formats a ParseResult preview string."""
+        if isinstance(result_or_input, ParseResult):
+            return result_or_input.get_preview()
+        res = cls.parse(result_or_input, unit_helper=unit_helper)
+        return res.get_preview()
+
+    @classmethod
+    def _build_separator_regex(cls):
+        """Dynamically construct regex pattern from SUPPORTED_SEPARATORS."""
+        escaped = [re.escape(s) for s in cls.SUPPORTED_SEPARATORS]
+        return r"(?:{})".format("|".join(escaped))
 
     @classmethod
     def parse_single(cls, val_str, unit_helper=None, default_unit=None):
@@ -160,6 +205,8 @@ class SmartDimensionParser(object):
         source_type = "Explicit Units"
         is_normalized_sep = False
 
+        sep_regex_pattern = cls._build_separator_regex()
+
         # 1. Check Labeled Input (e.g., L=2.25m W=5.00m or W=5.00m L=2.25m)
         strict_labeled = re.findall(
             r"(?:L|W|Length|Width|Len|Wid|H|Height|B)\s*[:=]\s*(\d+(?:\.\d+)?\s*[a-zA-Z\"']*)",
@@ -185,26 +232,26 @@ class SmartDimensionParser(object):
                 cand_a_raw = fi_tokens[0]
                 cand_b_raw = fi_tokens[1]
                 source_type = "Feet & Inches"
-                sep_match = re.search(r"\b(x|×|by|\*|/|,|;)\b", raw_input, re.IGNORECASE)
+                sep_match = re.search(r"\b(" + sep_regex_pattern + r")\b", raw_input, re.IGNORECASE)
                 if sep_match:
                     detected_sep = sep_match.group(1)
 
-        # 3. Explicit Separator Normalization & Splitting
+        # 3. Configurable Separator Normalization & Splitting
         if not cand_a_raw:
-            sep_search = re.search(r"(×|by|x|X|\*|/|,|;)", raw_input)
+            sep_search = re.search(r"(" + sep_regex_pattern + r")", raw_input, re.IGNORECASE)
             if sep_search:
                 sep_char = sep_search.group(1)
                 detected_sep = sep_char
-                if sep_char in ["*", "/", ",", ";"] or re.search(r"\d[a-zA-Z]" + re.escape(sep_char) + r"\d", raw_input):
+                if sep_char in ["*", "/", ",", ";", ":", "-"] or re.search(r"\d[a-zA-Z]" + re.escape(sep_char) + r"\d", raw_input):
                     is_normalized_sep = True
 
-            # Insert spaces around separators for zero-space inputs like 2.25mx5.00m, 2250MMX5000MM
+            # Insert spaces around configured separators for zero-space inputs like 2.25mx5.00m, 2250MMX5000MM
             normalized_text = re.sub(
-                r'(?<=\d|[a-zA-Z"\'\)])\s*(×|by|x|X|\*|/|,|;)\s*(?=\d|[a-zA-Z"\'\(])',
+                r'(?<=\d|[a-zA-Z"\'\)])\s*(' + sep_regex_pattern + r')\s*(?=\d|[a-zA-Z"\'\(])',
                 r' \1 ', raw_input, flags=re.IGNORECASE
             )
 
-            split_parts = re.split(r"\s*(?:×|by|x|X|\*|/|,|;)\s*", normalized_text, flags=re.IGNORECASE)
+            split_parts = re.split(r"\s*(?:" + sep_regex_pattern + r")\s*", normalized_text, flags=re.IGNORECASE)
             split_parts = [p.strip() for p in split_parts if p.strip()]
 
             if len(split_parts) == 2:
@@ -263,13 +310,22 @@ class SmartDimensionParser(object):
         # Determine Confidence Level
         if source_type in ["Explicit Units", "Feet & Inches", "Labeled Input"] and detected_sep in ["x", "X", "×", "by", "label"]:
             confidence = "High"
-        elif source_type == "Inherited Units" or detected_sep in ["*", "/", ",", ";", "space"]:
+        elif source_type == "Inherited Units" or (source_type != "Project Units" and detected_sep in cls.SUPPORTED_SEPARATORS):
             confidence = "Medium"
         else:
             confidence = "Low"
 
-        dim_a_disp = cand_a_str if unit_a or default_unit_a else "{} {}".format(cand_a_str, parsed_units)
-        dim_b_disp = cand_b_str if unit_b or default_unit_b else "{} {}".format(cand_b_str, parsed_units)
+        # Format display strings with a space between number and unit for presentation
+        def format_disp(val_str, unit):
+            m = re.match(r"^(\d+(?:\.\d+)?)\s*([a-zA-Z\"']*)$", val_str)
+            if m:
+                num_part = m.group(1)
+                u_part = m.group(2) or unit or ""
+                return "{} {}".format(num_part, u_part).strip()
+            return val_str
+
+        dim_a_disp = format_disp(cand_a_str, unit_a or default_unit_a)
+        dim_b_disp = format_disp(cand_b_str, unit_b or default_unit_b)
 
         return ParseResult(
             success=True,

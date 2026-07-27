@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Comprehensive Unit Tests for Smart Dimension Parsing Engine."""
+"""Comprehensive Unit Tests for Smart Dimension Parsing Engine (v1.1)."""
 import sys
 import os
 import unittest
@@ -155,6 +155,50 @@ class TestSmartDimensionParser(unittest.TestCase):
             res = SmartDimensionParser.parse(inp)
             self.assertFalse(res.Success, "Expected failure for: {}".format(inp))
             self.assertEqual(res.ErrorMessage, "Invalid Format")
+
+    # --- v1.1 ENHANCEMENT TESTS ---
+
+    def test_v1_1_configurable_separators(self):
+        # Test colon and hyphen separators from SUPPORTED_SEPARATORS
+        res_colon = SmartDimensionParser.parse("2.25m:5.00m")
+        self.assertTrue(res_colon.Success)
+        self.assertAlmostEqualRel(res_colon.InternalA, 2.25 / 0.3048)
+
+        res_comma = SmartDimensionParser.parse("2.25m, 5.00m")
+        self.assertTrue(res_comma.Success)
+
+        # Test adding custom separator dynamically
+        original_seps = list(SmartDimensionParser.SUPPORTED_SEPARATORS)
+        try:
+            SmartDimensionParser.SUPPORTED_SEPARATORS.append("@")
+            res_custom = SmartDimensionParser.parse("2.25m @ 5.00m")
+            self.assertTrue(res_custom.Success)
+            self.assertAlmostEqualRel(res_custom.InternalA, 2.25 / 0.3048)
+            self.assertAlmostEqualRel(res_custom.InternalB, 5.00 / 0.3048)
+        finally:
+            SmartDimensionParser.SUPPORTED_SEPARATORS = original_seps
+
+    def test_v1_1_preview_validation_success(self):
+        res = SmartDimensionParser.parse("2.25m by 5.00m")
+        preview = res.get_preview()
+        self.assertIn("Original Value", preview)
+        self.assertIn("2.25m by 5.00m", preview)
+        self.assertIn("Dimension A    : 2.25 m", preview)
+        self.assertIn("Dimension B    : 5.00 m", preview)
+        self.assertIn("Confidence     : High", preview)
+        self.assertIn("\u2713 Parsed Successfully", preview)
+
+        preview_class = SmartDimensionParser.format_preview("2.25m by 5.00m")
+        self.assertEqual(preview, preview_class)
+
+    def test_v1_1_preview_validation_failure(self):
+        res = SmartDimensionParser.parse("2.25 by five")
+        preview = res.get_preview()
+        self.assertIn("Original Value", preview)
+        self.assertIn("2.25 by five", preview)
+        self.assertIn("\u2716 Invalid Format", preview)
+        self.assertIn("Unable to extract two valid numeric dimensions", preview)
+        self.assertIn("Supported Examples:", preview)
 
 
 if __name__ == '__main__':
