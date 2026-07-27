@@ -1,74 +1,72 @@
-# RoomPro Version 1.0.0 Release Notes
+# ROOMS PRO Version 1.0.0 Release Notes
 
-**Release Date:** July 27, 2026  
-**Commit Hash:** `6ab932a`  
-**Release Tag:** `v1.0.0`  
-**Repository:** [https://github.com/aryanclaurence-blip/R-O-O-M-S.git](https://github.com/aryanclaurence-blip/R-O-O-M-S.git)
-
----
-
-## Executive Summary
-
-RoomPro v1.0.0 introduces the **Smart Dimension Parsing Engine**, enabling format-agnostic, intelligent interpretation of single or dual room dimension strings stored in Revit parameters. This release preserves strict architectural separation of responsibilities across all components (Geometry Engine, Shape Classifier, Smart Parser, Comparison Engine, and Highlight Engine).
+**Release Version:** `v1.0.0`  
+**Repository:** [https://github.com/aryanclaurence-blip/R-O-O-M-S.git](https://github.com/aryanclaurence-blip/R-O-O-M-S.git)  
+**Branch:** `main`  
+**Author:** aryanclaurence  
 
 ---
 
-## 🚀 New Features
+## 🎨 Official Extension Branding
+
+- **Ribbon Tab:** `AVI`
+- **Ribbon Panel:** `ROOMS PRO`
+- **Push Button:** `L × W`
+- **Window Title:** `ROOMS PRO v1.0.0`
+
+---
+
+## 🌟 Features & Architecture Summary
 
 ### 1. Smart Dimension Parsing Engine (`SmartDimensionParser`)
-- **Format-Agnostic Extraction**: Parses dimension strings in any company format (`2.25m x 5.00m`, `2250 x 5000`, `2250mm x 5000mm`, `10'-6" x 12'-0"`, `L=2.25m W=5.00m`, `W=5.00m L=2.25m`, `2.25m by 5.00m`, `2.25m*5.00m`, `2.25m/5.00m`, `2.25mx5.00m`, `2250MMX5000MM`).
-- **Structured `ParseResult`**: Returns complete metadata (`Success`, `DimensionA`, `DimensionB`, `InternalA`, `InternalB`, `OriginalInput`, `ParsedUnits`, `Confidence`, `DetectedSeparator`, `SourceType`, `ParseWarnings`, `ErrorMessage`).
-- **Strict Order Preservation**: `Dimension A` is strictly the first value found, `Dimension B` is the second. Never automatically reorders or swaps values.
-- **Configurable Separators**: Centralized separator registry (`SUPPORTED_SEPARATORS = ['x', 'X', '×', 'by', '*', '/', ',', ';', ':', '-']`).
-- **Validation Preview Helper**: `get_preview()` and `format_preview()` output clean human-readable validation summaries for user feedback.
+- **Format-Agnostic Extraction**: Intelligently parses single or dual dimension strings in any format (`2.25m x 5.00m`, `2250 x 5000`, `2250mm x 5000mm`, `10'-6" x 12'-0"`, `L=2.25m W=5.00m`, `W=5.00m L=2.25m`, `2.25m by 5.00m`, `2.25m*5.00m`, `2.25mx5.00m`).
+- **Structured Output**: Returns `ParseResult` metadata (`Success`, `DimensionA`, `DimensionB`, `InternalA`, `InternalB`, `ParsedUnits`, `Confidence`, `DetectedSeparator`, `SourceType`, `ParseWarnings`).
+- **Strict Order Preservation**: Values are returned strictly in order of appearance (`Dimension A` & `Dimension B`) without automatic swapping.
 
-### 2. Single Combined Dimension Parameter Support (UI & Engine)
-- **"None" Dropdown Option**: Dropdowns for `Length Parameter (X)` and `Width Parameter (Y)` include `"None"` as the first choice.
-- **Single-Parameter Workflows**: Setting one dropdown to `"None"` and selecting a combined string parameter (e.g., `Dimensions`) automatically executes `SmartDimensionParser` for dual-value extraction.
-- **Validation Guards**: Prevents invalid configurations (`None + None`, `Combined + Separate`).
+### 2. Single Combined Parameter Support
+- Dropdowns for `Length Parameter (X)` and `Width Parameter (Y)` include `"None"` as the first option.
+- Selecting a combined parameter (e.g. `Dimensions`) on one dropdown and setting the other to `"None"` automatically executes single-parameter parsing.
 
----
+### 3. Linked Model Parameter Discovery Engine
+- **Scope-Aware Parameter Sources**:
+  - `Current View`: Host model parameters visible in active view.
+  - `Entire Project`: Host model parameters only.
+  - `Linked Models`: Parameters from room elements in loaded linked models only.
+  - `All Models`: Merged **UNION** of Host + Linked model room parameters.
+- **Crash-Safe Link & Room Handling**: Unloaded/broken links log warnings and continue safely. Linked rooms remain strictly read-only during write operations.
 
-## 🛠️ Bug Fixes & Stability Improvements
+### 4. Color Splasher Additive Highlight Mode
+- Multi-selection additive shape highlighting (`Perfect Rectangle`, `Four-Sided Non-Rectangle`, `Complex Polygon`, `Curved Geometry`, `User Selected`).
+- Shape toolbar buttons display single-selection visual state while cumulative model highlights remain active until explicitly cleared via **Clear Highlights**.
 
-1. **Non-Skipping Geometry Error Handling**:
-   - Room boundary retrieval/calculation failures no longer skip rooms via `continue`.
-   - Rooms with invalid/unclosed geometry are added to the Results Grid as `Result = "GEOMETRY ERROR"`, `Length = "-"`, `Width = "-"`, `ResultColor = "#800080"`.
-
-2. **Single Linear Status Evaluation Pipeline**:
-   - Status determination follows strict priority:
-     `GEOMETRY ERROR` ➔ `MISSING PARAMETER` ➔ `READ ONLY` ➔ `FAIL` ➔ `PASS`.
-
-3. **Independent Shape Classification**:
-   - Shape classification (`Perfect Rectangle`, `Four-Sided Non-Rectangle`, `Complex Polygon`, `Curved Geometry`) is strictly independent metadata for display and filtering.
-   - Shape classification **never** overwrites `PASS` or `FAIL`.
-
-4. **Parameter Access Isolation**:
-   - Parameters set to `"None"` are guarded and **never** queried via Revit API.
+### 5. Single Linear Status Pipeline & Non-Skipping Geometry Error Handling
+- Linear evaluation hierarchy: `GEOMETRY ERROR` ➔ `MISSING PARAMETER` ➔ `READ ONLY` ➔ `FAIL` ➔ `PASS`.
+- Rooms with missing/unclosed boundaries are added to the Results Grid as `Result = "GEOMETRY ERROR"`, `Length = "-"`, `Width = "-"`.
+- Shape classification is strictly independent display metadata and never overwrites `PASS` or `FAIL`.
 
 ---
 
-## 📊 End-to-End Test Matrix & Verification Summary
+## 📋 Pre-Release Verification Checklist
 
-| Component / Workflow | Test Coverage | Result |
-|---|---|---|
-| **Automated Unit Tests** | 21 test cases in `tests/test_dimension_parser.py` | **PASSED** (0.003s) |
-| **Geometry Types** | Rectangle, 4-Sided Non-Rectangle, Polygon, Curved, Invalid | **PASSED** |
-| **Parameter Modes** | Separate Length+Width, Single Combined, Missing, Read-Only | **PASSED** |
-| **Parser Units** | Metric (`m`, `mm`, `cm`), Imperial (`ft`, `in`), Feet-Inches (`10'-6"`), Project Units | **PASSED** |
-| **Operations** | Cross Check, Set Room Dimensions | **PASSED** |
-| **Processing Scopes** | Current View, Entire Project, Linked Models, All Models | **PASSED** |
+- [x] No syntax errors
+- [x] IronPython 2.7 & CPython 3 compatible
+- [x] Revit 2024 supported
+- [x] Ribbon branding updated (`AVI` tab ➔ `ROOMS PRO` panel ➔ `L × W` button)
+- [x] Color Splasher working additively
+- [x] Smart Dimension Parser working format-agnostically
+- [x] Separate Parameter mode working
+- [x] Combined Parameter mode working
+- [x] Cross Check working
+- [x] Set Room Dimensions working
+- [x] Host Model workflow working
+- [x] Linked Model parameter discovery working
+- [x] Crash-safe exception handling across all links/rooms
+- [x] All 21 unit tests passing
 
 ---
 
-## 🔒 Known Limitations
+## 🏷️ Build Information
 
-- **Linked Models Highlight**: Graphic overrides cannot be applied directly to elements inside linked models in Revit host views (handled gracefully with logging and grid display).
-
----
-
-## 🏷️ Version Details
-
-- **Release Tag:** `v1.0.0`
-- **Commit Hash:** `6ab932a`
-- **Build Status:** Production Ready & Verified
+- **Release Commit Message:** `Release: ROOMS PRO v1.0.0`
+- **Git Tag:** `v1.0.0`
+- **Target Branch:** `main`

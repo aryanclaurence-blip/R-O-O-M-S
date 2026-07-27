@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Room Dimension Manager" Height="700" Width="1100"
+        Title="ROOMS PRO v1.0.0" Height="700" Width="1100"
         WindowStartupLocation="CenterScreen" FontFamily="Segoe UI">
     <Window.Resources>
         <Style TargetType="ToggleButton" x:Key="FilterIconStyle">
@@ -80,7 +80,7 @@
     </Grid.RowDefinitions>
     
     <StackPanel Grid.Row="0" Margin="0,0,0,16">
-      <TextBlock Text="Room Dimension Manager" FontSize="24" FontWeight="SemiBold"/>
+      <TextBlock Text="ROOMS PRO" FontSize="24" FontWeight="SemiBold"/>
       <TextBlock x:Name="document_label" Foreground="DimGray"/>
     </StackPanel>
     

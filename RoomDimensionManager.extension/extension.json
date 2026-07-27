@@ -1,6 +1,6 @@
 {
-  "name": "Room Dimension Manager",
-  "description": "Pure pyRevit room dimension manager",
+  "name": "ROOMS PRO",
+  "description": "Pure pyRevit ROOMS PRO Extension",
   "author": "aryanclaurence",
-  "version": "2.0.0"
+  "version": "1.0.0"
 }
