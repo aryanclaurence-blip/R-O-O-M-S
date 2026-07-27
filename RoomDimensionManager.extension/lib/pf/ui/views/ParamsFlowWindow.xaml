@@ -1,0 +1,210 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PARAMS FLOW v1.0.0" Height="750" Width="1150"
+        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI">
+    <Window.Resources>
+        <Style TargetType="DataGrid">
+            <Setter Property="AlternatingRowBackground" Value="#F9F9F9"/>
+            <Setter Property="RowHeight" Value="26"/>
+            <Setter Property="ColumnHeaderHeight" Value="30"/>
+            <Setter Property="BorderBrush" Value="#D9D9D9"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#EAEAEA"/>
+            <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="SelectionMode" Value="Extended"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="BorderBrush" Value="#D9D9D9"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="Padding" Value="8,0,8,0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style TargetType="DataGridRow">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#CCE8FF"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="220"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="PARAMS FLOW" FontSize="24" FontWeight="SemiBold"/>
+            <TextBlock x:Name="subtitle_label" Text="Enterprise Parameter Flow, Batch Mapping, and Validation Engine" Foreground="DimGray"/>
+        </StackPanel>
+
+        <!-- Top Controls: Scope & Category -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <GroupBox Grid.Column="0" Header="PROCESSING SCOPE" Margin="0,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Scope:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="scope_combo" SelectedIndex="0" Width="200" Height="24">
+                        <ComboBoxItem Content="Current View"/>
+                        <ComboBoxItem Content="Entire Project"/>
+                        <ComboBoxItem Content="Selected Elements"/>
+                    </ComboBox>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Grid.Column="1" Header="TARGET CATEGORY" Margin="8,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Category:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="category_combo" Width="220" Height="24"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Grid.Column="2" Header="PRESET MANAGER" Margin="8,0,0,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="load_preset_btn" Content="Import Preset (JSON)" Width="140" Height="24" Margin="0,0,8,0"/>
+                    <Button x:Name="save_preset_btn" Content="Export Preset (JSON)" Width="140" Height="24"/>
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+
+        <!-- Middle: Mapping Builder & Active Queue -->
+        <Grid Grid.Row="2" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Mapping Rule Builder -->
+            <GroupBox Grid.Column="0" Header="MAPPING BUILDER" Margin="0,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
+                <StackPanel>
+                    <TextBlock Text="Mapping Mode" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="mapping_mode_combo" SelectedIndex="0" Height="24" Margin="0,0,0,8">
+                        <ComboBoxItem Content="Parameter Copy"/>
+                        <ComboBoxItem Content="Static Value"/>
+                        <ComboBoxItem Content="Sequence Generator"/>
+                        <ComboBoxItem Content="Find &amp; Replace"/>
+                    </ComboBox>
+
+                    <StackPanel x:Name="source_param_panel" Margin="0,0,0,8">
+                        <TextBlock Text="Source Parameter" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="source_param_combo" Height="24"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="static_value_panel" Visibility="Collapsed" Margin="0,0,0,8">
+                        <TextBlock Text="Static Value" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBox x:Name="static_value_txt" Height="24" Text="Phase 1"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="sequence_panel" Visibility="Collapsed" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="60"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                <TextBlock Text="Pattern" FontWeight="SemiBold"/>
+                                <TextBox x:Name="seq_pattern_txt" Height="24" Text="RM-{SEQ:001}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,4,0">
+                                <TextBlock Text="Start" FontWeight="SemiBold"/>
+                                <TextBox x:Name="seq_start_txt" Height="24" Text="1"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Step" FontWeight="SemiBold"/>
+                                <TextBox x:Name="seq_step_txt" Height="24" Text="1"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <TextBlock Text="Target Parameter" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="target_param_combo" Height="24" Margin="0,0,0,12"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="add_mapping_btn" Content="+ Add to Queue" Width="120" Height="26" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Active Mapping Queue -->
+            <GroupBox Grid.Column="1" Header="MAPPING QUEUE" Margin="8,0,0,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <DataGrid Grid.Row="0" x:Name="queue_grid" AutoGenerateColumns="False" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Mode" Binding="{Binding MappingType}" Width="140"/>
+                            <DataGridTextColumn Header="Source / Value" Binding="{Binding SourceDisplay}" Width="*"/>
+                            <DataGridTextColumn Header="Target Parameter" Binding="{Binding TargetParameter}" Width="180"/>
+                            <DataGridTemplateColumn Header="Status" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Status}" Foreground="{Binding StatusColor}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="8">
+                        <Button x:Name="remove_mapping_btn" Content="Remove Selected" Width="120" Height="24" Margin="0,0,8,0"/>
+                        <Button x:Name="clear_queue_btn" Content="Clear Queue" Width="100" Height="24"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+        </Grid>
+
+        <!-- Action Toolbar -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button x:Name="validate_btn" Content="Validate Queue" Width="120" Height="26" Margin="0,0,8,0"/>
+            <Button x:Name="repair_btn" Content="Repair Suggestions" Width="130" Height="26" Margin="0,0,16,0"/>
+            <Button x:Name="apply_btn" Content="Apply Mappings" Width="140" Height="26" Margin="0,0,8,0" FontWeight="Bold"/>
+            <Button x:Name="export_csv_btn" Content="Export CSV" Width="110" Height="26" Margin="0,0,8,0"/>
+            <Button x:Name="help_btn" Content="Help" Width="80" Height="26"/>
+        </StackPanel>
+
+        <!-- Sample Preview & Results Grid -->
+        <GroupBox Grid.Row="4" Header="SAMPLE PREVIEW &amp; BATCH RESULTS" BorderBrush="#D9D9D9" BorderThickness="1" Padding="0">
+            <DataGrid x:Name="results_grid" AutoGenerateColumns="False" IsReadOnly="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID" Binding="{Binding ElementId}" Width="80"/>
+                    <DataGridTextColumn Header="Category" Binding="{Binding CategoryName}" Width="120"/>
+                    <DataGridTextColumn Header="Source" Binding="{Binding SourceMapping}" Width="160"/>
+                    <DataGridTextColumn Header="Target Parameter" Binding="{Binding TargetParameter}" Width="160"/>
+                    <DataGridTextColumn Header="Old Value" Binding="{Binding OldValue}" Width="*"/>
+                    <DataGridTextColumn Header="New Value" Binding="{Binding NewValue}" Width="*"/>
+                    <DataGridTemplateColumn Header="Status" Width="140">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Status}" Foreground="{Binding StatusColor}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </GroupBox>
+
+        <!-- Footer Status -->
+        <TextBlock Grid.Row="5" x:Name="status_text" Margin="0,8,0,0" Foreground="DimGray" Text="Ready"/>
+    </Grid>
+</Window>
