@@ -38,7 +38,8 @@ class ParamsFlowWindow(forms.WPFWindow):
         
         # Event Wireups
         self.scope_combo.SelectionChanged += self.on_scope_changed
-        self.category_combo.SelectionChanged += self.on_category_changed
+        self.source_cat_combo.SelectionChanged += self.on_source_category_changed
+        self.target_cat_combo.SelectionChanged += self.on_target_category_changed
         self.mapping_mode_combo.SelectionChanged += self.on_mode_changed
         self.add_mapping_btn.Click += self.on_add_mapping
         self.dup_mapping_btn.Click += self.on_duplicate
@@ -71,40 +72,55 @@ class ParamsFlowWindow(forms.WPFWindow):
     def refresh_categories(self):
         scope_name = self._choice(self.scope_combo) or "Current View"
         cats = self.element_service.get_categories_in_scope(scope_name)
-        self.category_combo.ItemsSource = cats
+        
+        # Set ItemsSource for both independent pipelines
+        self.source_cat_combo.ItemsSource = cats
+        self.target_cat_combo.ItemsSource = cats
+        
         if "Rooms" in cats:
-            self.category_combo.SelectedItem = "Rooms"
+            self.source_cat_combo.SelectedItem = "Rooms"
         elif len(cats) > 0:
-            self.category_combo.SelectedIndex = 0
-        else:
-            self.category_combo.ItemsSource = ["None"]
-            self.category_combo.SelectedIndex = 0
+            self.source_cat_combo.SelectedIndex = 0
 
-    def refresh_parameters(self):
-        import time
-        t_start = time.time()
+        if "Doors" in cats:
+            self.target_cat_combo.SelectedItem = "Doors"
+        elif "Rooms" in cats:
+            self.target_cat_combo.SelectedItem = "Rooms"
+        elif len(cats) > 0:
+            self.target_cat_combo.SelectedIndex = 0
+
+        self.refresh_source_parameters()
+        self.refresh_target_parameters()
+
+    def refresh_source_parameters(self):
         scope_name = self._choice(self.scope_combo) or "Current View"
-        cat_name = self._choice(self.category_combo)
+        cat_name = self._choice(self.source_cat_combo)
         if not cat_name or cat_name == "None":
-            self.set_status("No elements found in selected scope.")
             return
 
         elems = self.element_service.get_elements_in_scope(scope_name, cat_name)
-        cat_key = "{}_{}".format(scope_name, cat_name)
+        cat_key = "SRC_{}_{}".format(scope_name, cat_name)
         params = self.parameter_service.discover_parameters_for_elements(elems, cat_key=cat_key)
         self.source_param_combo.ItemsSource = params
-        self.target_param_combo.ItemsSource = params
         if params:
             self.source_param_combo.SelectedIndex = 0
-            self.target_param_combo.SelectedIndex = 0 if len(params) < 2 else 1
 
-        # Update Source & Target Information Cards
-        if hasattr(self, 'source_cat_card_text'):
-            self.source_cat_card_text.Text = cat_name
         if hasattr(self, 'source_elem_card_text'):
             self.source_elem_card_text.Text = "{} Elements".format(len(elems))
-        if hasattr(self, 'target_cat_card_text'):
-            self.target_cat_card_text.Text = cat_name
+
+    def refresh_target_parameters(self):
+        scope_name = self._choice(self.scope_combo) or "Current View"
+        cat_name = self._choice(self.target_cat_combo)
+        if not cat_name or cat_name == "None":
+            return
+
+        elems = self.element_service.get_elements_in_scope(scope_name, cat_name)
+        cat_key = "TGT_{}_{}".format(scope_name, cat_name)
+        params = self.parameter_service.discover_parameters_for_elements(elems, cat_key=cat_key)
+        self.target_param_combo.ItemsSource = params
+        if params:
+            self.target_param_combo.SelectedIndex = 0
+
         if hasattr(self, 'target_elem_card_text'):
             self.target_elem_card_text.Text = "{} Targets".format(len(elems))
 
@@ -123,8 +139,11 @@ class ParamsFlowWindow(forms.WPFWindow):
     def on_scope_changed(self, sender, args):
         self.refresh_categories()
 
-    def on_category_changed(self, sender, args):
-        self.refresh_parameters()
+    def on_source_category_changed(self, sender, args):
+        self.refresh_source_parameters()
+
+    def on_target_category_changed(self, sender, args):
+        self.refresh_target_parameters()
 
     def on_mode_changed(self, sender, args):
         mode = self._choice(self.mapping_mode_combo)
@@ -151,7 +170,8 @@ class ParamsFlowWindow(forms.WPFWindow):
         src_param = self._choice(self.source_param_combo)
         tgt_param = self._choice(self.target_param_combo)
         scope_name = self._choice(self.scope_combo)
-        cat_name = self._choice(self.category_combo)
+        src_cat = self._choice(self.source_cat_combo)
+        tgt_cat = self._choice(self.target_cat_combo)
         static_val = self.static_value_txt.Text
         seq_pat = self.seq_pattern_txt.Text
         seq_start = self.seq_start_txt.Text
@@ -170,8 +190,8 @@ class ParamsFlowWindow(forms.WPFWindow):
             seq_start=seq_start,
             seq_step=seq_step,
             source_scope=scope_name,
-            source_cat=cat_name,
-            target_cat=cat_name
+            source_cat=src_cat,
+            target_cat=tgt_cat
         )
 
         if self.queue_manager.is_duplicate(mapping_obj):

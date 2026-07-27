@@ -100,20 +100,13 @@
                             <StackPanel>
                                 <TextBlock Text="SOURCE (READ FROM)" FontWeight="Bold" Foreground="#0078D7" Margin="0,0,0,6"/>
                                 
-                                <Grid Margin="0,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Margin="0,0,4,0">
-                                        <TextBlock Text="Category" FontSize="11" Foreground="DimGray"/>
-                                        <TextBlock x:Name="source_cat_card_text" Text="Rooms" FontWeight="SemiBold" FontSize="12"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Source Elements" FontSize="11" Foreground="DimGray"/>
-                                        <TextBlock x:Name="source_elem_card_text" Text="284 Rooms" FontWeight="SemiBold" FontSize="12"/>
-                                    </StackPanel>
-                                </Grid>
+                                <TextBlock Text="Source Category" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                                <ComboBox x:Name="source_cat_combo" Height="24" Margin="0,0,0,6"/>
+
+                                <StackPanel Margin="0,0,0,6">
+                                    <TextBlock Text="Source Elements" FontSize="11" Foreground="DimGray"/>
+                                    <TextBlock x:Name="source_elem_card_text" Text="284 Rooms" FontWeight="SemiBold" FontSize="12"/>
+                                </StackPanel>
 
                                 <StackPanel x:Name="source_param_panel" Margin="0,0,0,4">
                                     <TextBlock Text="Read From (Source Parameter)" FontWeight="SemiBold" Margin="0,0,0,4"/>
@@ -178,20 +171,13 @@
                             <StackPanel>
                                 <TextBlock Text="TARGET (WRITE TO)" FontWeight="Bold" Foreground="#008000" Margin="0,0,0,6"/>
                                 
-                                <Grid Margin="0,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Margin="0,0,4,0">
-                                        <TextBlock Text="Category" FontSize="11" Foreground="DimGray"/>
-                                        <TextBlock x:Name="target_cat_card_text" Text="Rooms" FontWeight="SemiBold" FontSize="12"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Target Elements" FontSize="11" Foreground="DimGray"/>
-                                        <TextBlock x:Name="target_elem_card_text" Text="284 Targets" FontWeight="SemiBold" FontSize="12"/>
-                                    </StackPanel>
-                                </Grid>
+                                <TextBlock Text="Target Category" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                                <ComboBox x:Name="target_cat_combo" Height="24" Margin="0,0,0,6"/>
+
+                                <StackPanel Margin="0,0,0,6">
+                                    <TextBlock Text="Target Elements" FontSize="11" Foreground="DimGray"/>
+                                    <TextBlock x:Name="target_elem_card_text" Text="18 Doors" FontWeight="SemiBold" FontSize="12"/>
+                                </StackPanel>
 
                                 <TextBlock Text="Write To (Target Parameter)" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                 <ComboBox x:Name="target_param_combo" Height="24" Margin="0,0,0,4"/>
