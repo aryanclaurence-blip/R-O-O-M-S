@@ -52,11 +52,15 @@ class ParameterService(object):
                 log_read(param.Definition.Name, "Double", param.AsDouble() if param.HasValue else "No Value", "N/A", val)
                 return val
                 
-        # Third pass: look for String parameter and parse using Revit Project Units
+        # Third pass: look for String parameter and parse using SmartDimensionParser
         for param in params:
             if not param.IsReadOnly and param.StorageType == StorageType.String:
                 if param.HasValue:
                     raw_str = param.AsString()
+                    p_res = self.unit_helper.parse_dimension_string(raw_str)
+                    if p_res.Success:
+                        log_read(param.Definition.Name, "String", raw_str, p_res.InternalA, p_res.InternalA)
+                        return p_res.InternalA
                     parsed = self.unit_helper.parse_length(raw_str)
                     if parsed is not None:
                         log_read(param.Definition.Name, "String", raw_str, parsed, parsed)
@@ -71,6 +75,10 @@ class ParameterService(object):
                     return val
                 elif param.StorageType == StorageType.String and param.HasValue:
                     raw_str = param.AsString()
+                    p_res = self.unit_helper.parse_dimension_string(raw_str)
+                    if p_res.Success:
+                        log_read(param.Definition.Name, "String (ReadOnly Fallback)", raw_str, p_res.InternalA, p_res.InternalA)
+                        return p_res.InternalA
                     parsed = self.unit_helper.parse_length(raw_str)
                     if parsed is not None:
                         log_read(param.Definition.Name, "String (ReadOnly Fallback)", raw_str, parsed, parsed)
