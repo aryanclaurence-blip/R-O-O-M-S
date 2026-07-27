@@ -91,65 +91,118 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Mapping Rule Builder -->
-            <GroupBox Grid.Column="0" Header="MAPPING BUILDER" Margin="0,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
-                <StackPanel>
-                    <TextBlock Text="Mapping Mode" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <ComboBox x:Name="mapping_mode_combo" SelectedIndex="0" Height="24" Margin="0,0,0,8">
-                        <ComboBoxItem Content="Parameter Copy"/>
-                        <ComboBoxItem Content="Static Value"/>
-                        <ComboBoxItem Content="Sequence Generator"/>
-                        <ComboBoxItem Content="Prefix"/>
-                        <ComboBoxItem Content="Suffix"/>
-                        <ComboBoxItem Content="Find &amp; Replace"/>
-                        <ComboBoxItem Content="Upper Case"/>
-                        <ComboBoxItem Content="Lower Case"/>
-                        <ComboBoxItem Content="Title Case"/>
-                        <ComboBoxItem Content="Trim"/>
-                        <ComboBoxItem Content="Trim Start"/>
-                        <ComboBoxItem Content="Trim End"/>
-                        <ComboBoxItem Content="Clear Value"/>
-                    </ComboBox>
+            <!-- Source -> Transformation -> Target Flow Builder -->
+            <GroupBox Grid.Column="0" Header="DATA FLOW MAPPING BUILDER" Margin="0,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <!-- SOURCE CARD -->
+                        <Border Background="#F9F9F9" BorderBrush="#0078D7" BorderThickness="1" CornerRadius="3" Padding="8" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="SOURCE (READ FROM)" FontWeight="Bold" Foreground="#0078D7" Margin="0,0,0,6"/>
+                                
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                        <TextBlock Text="Category" FontSize="11" Foreground="DimGray"/>
+                                        <TextBlock x:Name="source_cat_card_text" Text="Rooms" FontWeight="SemiBold" FontSize="12"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Source Elements" FontSize="11" Foreground="DimGray"/>
+                                        <TextBlock x:Name="source_elem_card_text" Text="284 Rooms" FontWeight="SemiBold" FontSize="12"/>
+                                    </StackPanel>
+                                </Grid>
 
-                    <StackPanel x:Name="source_param_panel" Margin="0,0,0,8">
-                        <TextBlock Text="Source Parameter" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <ComboBox x:Name="source_param_combo" Height="24"/>
-                    </StackPanel>
+                                <StackPanel x:Name="source_param_panel" Margin="0,0,0,4">
+                                    <TextBlock Text="Read From (Source Parameter)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <ComboBox x:Name="source_param_combo" Height="24"/>
+                                </StackPanel>
 
-                    <StackPanel x:Name="static_value_panel" Visibility="Collapsed" Margin="0,0,0,8">
-                        <TextBlock Text="Static Value" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                        <TextBox x:Name="static_value_txt" Height="24" Text="Phase 1"/>
-                    </StackPanel>
+                                <StackPanel x:Name="static_value_panel" Visibility="Collapsed" Margin="0,0,0,4">
+                                    <TextBlock Text="Static Value" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                    <TextBox x:Name="static_value_txt" Height="24" Text="Phase 1"/>
+                                </StackPanel>
 
-                    <StackPanel x:Name="sequence_panel" Visibility="Collapsed" Margin="0,0,0,8">
-                        <Grid>
+                                <StackPanel x:Name="sequence_panel" Visibility="Collapsed" Margin="0,0,0,4">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="55"/>
+                                            <ColumnDefinition Width="55"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                            <TextBlock Text="Pattern" FontWeight="SemiBold"/>
+                                            <TextBox x:Name="seq_pattern_txt" Height="24" Text="RM-{SEQ:001}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Margin="0,0,4,0">
+                                            <TextBlock Text="Start" FontWeight="SemiBold"/>
+                                            <TextBox x:Name="seq_start_txt" Height="24" Text="1"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Step" FontWeight="SemiBold"/>
+                                            <TextBox x:Name="seq_step_txt" Height="24" Text="1"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- TRANSFORMATION ARROW & MODE -->
+                        <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="60"/>
-                                <ColumnDefinition Width="60"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Margin="0,0,4,0">
-                                <TextBlock Text="Pattern" FontWeight="SemiBold"/>
-                                <TextBox x:Name="seq_pattern_txt" Height="24" Text="RM-{SEQ:001}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Margin="0,0,4,0">
-                                <TextBlock Text="Start" FontWeight="SemiBold"/>
-                                <TextBox x:Name="seq_start_txt" Height="24" Text="1"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Step" FontWeight="SemiBold"/>
-                                <TextBox x:Name="seq_step_txt" Height="24" Text="1"/>
-                            </StackPanel>
+                            <TextBlock Grid.Column="0" Text="↓ Mode:" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox Grid.Column="1" x:Name="mapping_mode_combo" SelectedIndex="0" Height="24">
+                                <ComboBoxItem Content="Parameter Copy"/>
+                                <ComboBoxItem Content="Static Value"/>
+                                <ComboBoxItem Content="Sequence Generator"/>
+                                <ComboBoxItem Content="Prefix"/>
+                                <ComboBoxItem Content="Suffix"/>
+                                <ComboBoxItem Content="Find &amp; Replace"/>
+                                <ComboBoxItem Content="Upper Case"/>
+                                <ComboBoxItem Content="Lower Case"/>
+                                <ComboBoxItem Content="Title Case"/>
+                                <ComboBoxItem Content="Trim"/>
+                                <ComboBoxItem Content="Trim Start"/>
+                                <ComboBoxItem Content="Trim End"/>
+                                <ComboBoxItem Content="Clear Value"/>
+                            </ComboBox>
                         </Grid>
-                    </StackPanel>
 
-                    <TextBlock Text="Target Parameter" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                    <ComboBox x:Name="target_param_combo" Height="24" Margin="0,0,0,12"/>
+                        <!-- TARGET CARD -->
+                        <Border Background="#F9F9F9" BorderBrush="#008000" BorderThickness="1" CornerRadius="3" Padding="8" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="TARGET (WRITE TO)" FontWeight="Bold" Foreground="#008000" Margin="0,0,0,6"/>
+                                
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,4,0">
+                                        <TextBlock Text="Category" FontSize="11" Foreground="DimGray"/>
+                                        <TextBlock x:Name="target_cat_card_text" Text="Rooms" FontWeight="SemiBold" FontSize="12"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Target Elements" FontSize="11" Foreground="DimGray"/>
+                                        <TextBlock x:Name="target_elem_card_text" Text="284 Targets" FontWeight="SemiBold" FontSize="12"/>
+                                    </StackPanel>
+                                </Grid>
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="add_mapping_btn" Content="+ Add to Queue" Width="120" Height="26" FontWeight="SemiBold"/>
+                                <TextBlock Text="Write To (Target Parameter)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="target_param_combo" Height="24" Margin="0,0,0,4"/>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="add_mapping_btn" Content="+ Add to Queue" Width="120" Height="26" FontWeight="SemiBold"/>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                </ScrollViewer>
             </GroupBox>
 
             <!-- Active Mapping Queue -->

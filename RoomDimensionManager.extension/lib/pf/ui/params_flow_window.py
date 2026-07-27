@@ -98,6 +98,16 @@ class ParamsFlowWindow(forms.WPFWindow):
             self.source_param_combo.SelectedIndex = 0
             self.target_param_combo.SelectedIndex = 0 if len(params) < 2 else 1
 
+        # Update Source & Target Information Cards
+        if hasattr(self, 'source_cat_card_text'):
+            self.source_cat_card_text.Text = cat_name
+        if hasattr(self, 'source_elem_card_text'):
+            self.source_elem_card_text.Text = "{} Elements".format(len(elems))
+        if hasattr(self, 'target_cat_card_text'):
+            self.target_cat_card_text.Text = cat_name
+        if hasattr(self, 'target_elem_card_text'):
+            self.target_elem_card_text.Text = "{} Targets".format(len(elems))
+
         # Populate Discovery Preview Panel with read-only element info
         self.result_items.Clear()
         for elem in elems[:20]:
