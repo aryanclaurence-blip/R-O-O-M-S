@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Sequence Generator for PARAMS FLOW."""
+"""Core Sequence Placeholder for PARAMS FLOW."""
 import re
 
 class SequenceGenerator(object):
@@ -8,22 +8,6 @@ class SequenceGenerator(object):
         self.start = int(start)
         self.step = int(step)
 
-    def generate_value(self, index):
-        """Generate formatted sequence string for element at index (0-based)."""
-        current_num = self.start + (index * self.step)
-        
-        match = re.search(r'\{SEQ(?::(\d+))?\}', self.pattern)
-        if not match:
-            return "{}_{}".format(self.pattern, current_num)
-
-        fmt_spec = match.group(1)
-        if fmt_spec and fmt_spec.startswith('0'):
-            width = len(fmt_spec)
-            seq_str = str(current_num).zfill(width)
-        elif fmt_spec:
-            width = int(fmt_spec)
-            seq_str = str(current_num).zfill(width)
-        else:
-            seq_str = str(current_num)
-
-        return re.sub(r'\{SEQ(?::\d+)?\}', seq_str, self.pattern)
+    def generate(self, index):
+        val = self.start + (index * self.step)
+        return re.sub(r'\{SEQ(?::\d+)?\}', str(val).zfill(3), self.pattern)

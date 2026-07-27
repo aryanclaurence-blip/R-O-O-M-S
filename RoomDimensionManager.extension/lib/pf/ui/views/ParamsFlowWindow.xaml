@@ -153,10 +153,12 @@
                     
                     <DataGrid Grid.Row="0" x:Name="queue_grid" AutoGenerateColumns="False" IsReadOnly="True">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Mode" Binding="{Binding MappingType}" Width="140"/>
+                            <DataGridTextColumn Header="#" Binding="{Binding Order}" Width="35"/>
+                            <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding Enabled}" Width="60"/>
+                            <DataGridTextColumn Header="Mode" Binding="{Binding MappingType}" Width="130"/>
                             <DataGridTextColumn Header="Source / Value" Binding="{Binding SourceDisplay}" Width="*"/>
-                            <DataGridTextColumn Header="Target Parameter" Binding="{Binding TargetParameter}" Width="180"/>
-                            <DataGridTemplateColumn Header="Status" Width="140">
+                            <DataGridTextColumn Header="Target Parameter" Binding="{Binding TargetParameter}" Width="150"/>
+                            <DataGridTemplateColumn Header="Status" Width="120">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Status}" Foreground="{Binding StatusColor}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
@@ -166,10 +168,23 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="8">
-                        <Button x:Name="remove_mapping_btn" Content="Remove Selected" Width="120" Height="24" Margin="0,0,8,0"/>
-                        <Button x:Name="clear_queue_btn" Content="Clear Queue" Width="100" Height="24"/>
-                    </StackPanel>
+                    <Grid Grid.Row="1" Margin="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <TextBlock Grid.Column="0" x:Name="queue_stats_text" Text="Mappings: 0 | Enabled: 0 | Categories: 0" VerticalAlignment="Center" Foreground="DimGray" FontWeight="SemiBold"/>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button x:Name="dup_mapping_btn" Content="Duplicate" Width="75" Height="24" Margin="0,0,4,0"/>
+                            <Button x:Name="move_up_btn" Content="Up" Width="45" Height="24" Margin="0,0,4,0"/>
+                            <Button x:Name="move_down_btn" Content="Down" Width="45" Height="24" Margin="0,0,8,0"/>
+                            <Button x:Name="toggle_enabled_btn" Content="Enable/Disable" Width="95" Height="24" Margin="0,0,8,0"/>
+                            <Button x:Name="remove_mapping_btn" Content="Remove" Width="75" Height="24" Margin="0,0,4,0"/>
+                            <Button x:Name="clear_queue_btn" Content="Clear Queue" Width="90" Height="24"/>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </GroupBox>
         </Grid>

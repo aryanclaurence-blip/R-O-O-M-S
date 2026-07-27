@@ -17,6 +17,8 @@ from pf.models.element_row import ElementResultRow
 from pf.utils.pf_logger import PFExecutionSession
 from pf.utils.csv_exporter import export_pf_csv
 
+from pf.core.queue_manager import PFQueueManager
+
 class ParamsFlowWindow(forms.WPFWindow):
     def __init__(self):
         xaml = os.path.join(os.path.dirname(__file__), 'views', 'ParamsFlowWindow.xaml')
@@ -26,8 +28,8 @@ class ParamsFlowWindow(forms.WPFWindow):
         self.uidoc = revit.uidoc
         self.element_service = ElementService(self.doc, self.uidoc)
         self.parameter_service = PFParameterService(self.doc)
+        self.queue_manager = PFQueueManager()
         
-        self.mapping_queue = []
         self.queue_items = ObservableCollection[MappingItem]()
         self.result_items = ObservableCollection[ElementResultRow]()
         
@@ -39,6 +41,10 @@ class ParamsFlowWindow(forms.WPFWindow):
         self.category_combo.SelectionChanged += self.on_category_changed
         self.mapping_mode_combo.SelectionChanged += self.on_mode_changed
         self.add_mapping_btn.Click += self.on_add_mapping
+        self.dup_mapping_btn.Click += self.on_duplicate
+        self.move_up_btn.Click += self.on_move_up
+        self.move_down_btn.Click += self.on_move_down
+        self.toggle_enabled_btn.Click += self.on_toggle_enabled
         self.remove_mapping_btn.Click += self.on_remove_mapping
         self.clear_queue_btn.Click += self.on_clear_queue
         self.validate_btn.Click += self.on_validate
@@ -75,15 +81,34 @@ class ParamsFlowWindow(forms.WPFWindow):
             self.category_combo.SelectedIndex = 0
 
     def refresh_parameters(self):
+        import time
+        t_start = time.time()
         scope_name = self._choice(self.scope_combo) or "Current View"
         cat_name = self._choice(self.category_combo)
+        if not cat_name or cat_name == "None":
+            self.set_status("No elements found in selected scope.")
+            return
+
         elems = self.element_service.get_elements_in_scope(scope_name, cat_name)
-        params = self.parameter_service.discover_parameters_for_elements(elems)
+        cat_key = "{}_{}".format(scope_name, cat_name)
+        params = self.parameter_service.discover_parameters_for_elements(elems, cat_key=cat_key)
         self.source_param_combo.ItemsSource = params
         self.target_param_combo.ItemsSource = params
         if params:
             self.source_param_combo.SelectedIndex = 0
             self.target_param_combo.SelectedIndex = 0 if len(params) < 2 else 1
+
+        # Populate Discovery Preview Panel with read-only element info
+        self.result_items.Clear()
+        for elem in elems[:20]:
+            elem_id_val = elem.Id.IntegerValue if hasattr(elem.Id, 'IntegerValue') else elem.Id
+            elem_name = getattr(elem, "Name", str(elem_id_val))
+            fam_name = getattr(elem, "Symbol", None)
+            fam_str = fam_name.Family.Name if fam_name and hasattr(fam_name, 'Family') else cat_name
+            self.result_items.Add(ElementResultRow(elem, cat_name, fam_str, "-", elem_name, "-", "PREVIEW", "Read-Only Discovery"))
+
+        duration = time.time() - t_start
+        self.set_status("{} Targets Selected ({}) | Discovery Time: {:.3f}s".format(len(elems), cat_name, duration))
 
     def on_scope_changed(self, sender, args):
         self.refresh_categories()
@@ -127,44 +152,53 @@ class ParamsFlowWindow(forms.WPFWindow):
         self.queue_items.Clear()
         self.set_status("Cleared mapping queue")
 
+    def _element_provider(self, scope_name, cat_name):
+        return self.element_service.get_elements_in_scope(scope_name, cat_name)
+
     def on_validate(self, sender, args):
-        if not self.mapping_queue:
+        mappings = self.queue_manager.get_all()
+        if not mappings:
             forms.alert("Mapping Queue is empty.", title="PARAMS FLOW")
             return
-        
-        scope_name = self._choice(self.scope_combo)
-        cat_name = self._choice(self.category_combo)
-        elems = self.element_service.get_elements_in_scope(scope_name, cat_name)
-        
-        validator = ValidationEngine(self.doc)
-        self.queue_items.Clear()
-        for m in self.mapping_queue:
-            res = validator.validate_mapping(m, elems)
-            m.status = res.status
-            self.queue_items.Add(MappingItem(m))
+
+        from pf.core.validation_engine import PFValidationEngine
+        from pf.core.preview import PFPreviewEngine
+
+        val_engine = PFValidationEngine(self.doc)
+        reports, summary = val_engine.validate_queue(mappings, self._element_provider)
+
+        for r in reports:
+            r.mapping.status = r.status
+
+        self.refresh_queue_ui()
+
+        preview_engine = PFPreviewEngine(self.doc)
+        preview_rows = preview_engine.generate_preview(mappings, self._element_provider, limit=100)
 
         self.result_items.Clear()
-        for elem in elems[:10]:
-            for m in self.mapping_queue:
-                src_val = self.parameter_service.read_param_as_string(elem, m.source_param) if m.mapping_type == MappingType.COPY else m.static_value
-                old_tgt = self.parameter_service.read_param_as_string(elem, m.target_param)
-                self.result_items.Add(ElementResultRow(elem, cat_name, m.source_param or m.mapping_type, m.target_param, old_tgt, src_val, "PREVIEW", "Sample Preview"))
+        for row in preview_rows:
+            self.result_items.Add(row)
 
-        self.set_status("Validation complete. Validated {} mappings across {} elements.".format(len(self.mapping_queue), len(elems)))
+        msg = "Validation Complete | Ready: {} | Warnings: {} | Errors: {} | Affected Targets: {} (Showing {} preview rows)".format(
+            summary.ready, summary.warnings, summary.errors, summary.affected_elements, len(preview_rows)
+        )
+        self.set_status(msg)
 
     def on_repair(self, sender, args):
-        if not self.mapping_queue:
+        mappings = self.queue_manager.get_all()
+        if not mappings:
             return
-        scope_name = self._choice(self.scope_combo)
-        cat_name = self._choice(self.category_combo)
-        elems = self.element_service.get_elements_in_scope(scope_name, cat_name)
-        validator = ValidationEngine(self.doc)
+        from pf.core.validation_engine import PFValidationEngine
+        from pf.core.repair import RepairEngine
+
+        val_engine = PFValidationEngine(self.doc)
         repair_eng = RepairEngine(self.doc)
 
         suggestions = []
-        for m in self.mapping_queue:
-            vres = validator.validate_mapping(m, elems)
-            sugg = repair_eng.analyze(vres)
+        for m in mappings:
+            elems = self._element_provider(m.source_scope, m.target_cat)
+            report = val_engine.validate_mapping(m, elems)
+            sugg = repair_eng.analyze(report)
             if sugg:
                 suggestions.append("- [{}] Target Parameter '{}': {}".format(sugg.issue_type, m.target_param, sugg.suggestion_msg))
 
@@ -174,32 +208,42 @@ class ParamsFlowWindow(forms.WPFWindow):
             forms.alert("All mappings are valid. No repair required.", title="PARAMS FLOW Repair Engine")
 
     def on_apply(self, sender, args):
-        if not self.mapping_queue:
-            forms.alert("Mapping Queue is empty.", title="PARAMS FLOW")
+        mappings = self.queue_manager.get_all()
+        enabled_mappings = [m for m in mappings if getattr(m, 'enabled', True)]
+        if not enabled_mappings:
+            forms.alert("No enabled mappings in queue.", title="PARAMS FLOW")
             return
 
-        scope_name = self._choice(self.scope_combo)
-        cat_name = self._choice(self.category_combo)
-        elems = self.element_service.get_elements_in_scope(scope_name, cat_name)
-        if not elems:
-            forms.alert("No elements found in selected scope/category.", title="PARAMS FLOW")
-            return
+        from pf.core.validation_engine import PFValidationEngine
+        from pf.core.execution_engine import PFExecutionEngine
 
-        session = PFExecutionSession("Batch Apply", scope_name, cat_name)
-        executor = BatchExecutor(self.doc)
-        
-        self.set_status("Executing batch parameter write...")
-        System.Windows.Forms.Application.DoEvents() if hasattr(System.Windows.Forms, 'Application') else None
+        val_engine = PFValidationEngine(self.doc)
+        reports, val_summary = val_engine.validate_queue(enabled_mappings, self._element_provider)
 
-        results = executor.execute_mappings(self.mapping_queue, elems, session)
+        if val_summary.errors > 0:
+            res = forms.alert(
+                "Validation found {} Error(s) in queue. Would you still like to continue and apply valid mappings?".format(val_summary.errors),
+                title="PARAMS FLOW Validation Warning",
+                yes=True, no=True
+            )
+            if not res:
+                return
+
+        self.set_status("Executing Batch Parameter Write...")
+        exec_engine = PFExecutionEngine(self.doc)
+        results, summary = exec_engine.execute(enabled_mappings, self._element_provider)
 
         self.result_items.Clear()
         for r in results:
             self.result_items.Add(r)
 
-        updated_count = sum(1 for r in results if r.Status == "UPDATED")
-        self.set_status("Batch Apply Complete. Updated: {} | Time: {:.2f}s".format(updated_count, session.get_duration()))
-        forms.alert("Batch Apply Completed Successfully!\n\nElements Updated: {}\nExecution Time: {:.2f} seconds".format(updated_count, session.get_duration()), title="PARAMS FLOW")
+        summary_msg = "BATCH APPLY COMPLETE\n\nMappings Executed: {}\nElements Processed: {}\nUpdated: {}\nSkipped: {}\nFailed: {}\nElapsed Time: {:.2f}s\nSuccess Rate: {:.1f}%".format(
+            summary.mappings_count, summary.processed_count, summary.updated_count, summary.skipped_count, summary.failed_count, summary.elapsed_time, summary.success_rate
+        )
+        self.set_status("Batch Apply Complete | Updated: {} | Skipped: {} | Failed: {} | Time: {:.2f}s".format(
+            summary.updated_count, summary.skipped_count, summary.failed_count, summary.elapsed_time
+        ))
+        forms.alert(summary_msg, title="PARAMS FLOW Batch Summary")
 
     def on_save_preset(self, sender, args):
         if not self.mapping_queue:
