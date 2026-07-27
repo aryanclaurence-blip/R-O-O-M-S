@@ -127,10 +127,21 @@ class ParamsFlowWindow(forms.WPFWindow):
         self.static_value_panel.Visibility = getattr(System.Windows.Visibility, "Visible", 0) if mode == MappingType.STATIC else getattr(System.Windows.Visibility, "Collapsed", 2)
         self.sequence_panel.Visibility = getattr(System.Windows.Visibility, "Visible", 0) if mode == MappingType.SEQUENCE else getattr(System.Windows.Visibility, "Collapsed", 2)
 
+    def refresh_queue_ui(self):
+        self.queue_items.Clear()
+        for idx, m in enumerate(self.queue_manager.get_all(), start=1):
+            self.queue_items.Add(MappingItem(m, order=idx))
+
+        stats = self.queue_manager.get_statistics()
+        if hasattr(self, 'queue_stats_text'):
+            self.queue_stats_text.Text = "Mappings: {} | Enabled: {} | Categories: {}".format(stats.total, stats.enabled, stats.categories)
+
     def on_add_mapping(self, sender, args):
         mode = self._choice(self.mapping_mode_combo)
         src_param = self._choice(self.source_param_combo)
         tgt_param = self._choice(self.target_param_combo)
+        scope_name = self._choice(self.scope_combo)
+        cat_name = self._choice(self.category_combo)
         static_val = self.static_value_txt.Text
         seq_pat = self.seq_pattern_txt.Text
         seq_start = self.seq_start_txt.Text
@@ -140,21 +151,61 @@ class ParamsFlowWindow(forms.WPFWindow):
             forms.alert("Select a Target Parameter.", title="PARAMS FLOW")
             return
 
-        mapping_obj = ParameterMapping(mode, src_param, tgt_param, static_val, seq_pat, seq_start, seq_step)
-        self.mapping_queue.append(mapping_obj)
-        self.queue_items.Add(MappingItem(mapping_obj))
+        mapping_obj = ParameterMapping(
+            mapping_type=mode,
+            source_param=src_param,
+            target_param=tgt_param,
+            static_value=static_val,
+            seq_pattern=seq_pat,
+            seq_start=seq_start,
+            seq_step=seq_step,
+            source_scope=scope_name,
+            source_cat=cat_name,
+            target_cat=cat_name
+        )
+
+        if self.queue_manager.is_duplicate(mapping_obj):
+            forms.alert("Warning: A duplicate mapping for Target Parameter '{}' already exists in the queue.".format(tgt_param), title="PARAMS FLOW Duplicate Warning")
+
+        self.queue_manager.add_mapping(mapping_obj)
+        self.refresh_queue_ui()
         self.set_status("Added mapping: {} -> {}".format(mode, tgt_param))
+
+    def on_duplicate(self, sender, args):
+        sel = self.queue_grid.SelectedItem
+        if sel and hasattr(sel, 'Mapping'):
+            self.queue_manager.duplicate_mapping(sel.Mapping)
+            self.refresh_queue_ui()
+            self.set_status("Duplicated selected mapping")
+
+    def on_move_up(self, sender, args):
+        sel = self.queue_grid.SelectedItem
+        if sel and hasattr(sel, 'Mapping'):
+            self.queue_manager.move_up(sel.Mapping)
+            self.refresh_queue_ui()
+
+    def on_move_down(self, sender, args):
+        sel = self.queue_grid.SelectedItem
+        if sel and hasattr(sel, 'Mapping'):
+            self.queue_manager.move_down(sel.Mapping)
+            self.refresh_queue_ui()
+
+    def on_toggle_enabled(self, sender, args):
+        sel = self.queue_grid.SelectedItem
+        if sel and hasattr(sel, 'Mapping'):
+            sel.Mapping.enabled = not getattr(sel.Mapping, 'enabled', True)
+            self.refresh_queue_ui()
 
     def on_remove_mapping(self, sender, args):
         sel = self.queue_grid.SelectedItem
-        if sel:
-            self.mapping_queue.remove(sel.Mapping)
-            self.queue_items.Remove(sel)
-            self.set_status("Removed mapping")
+        if sel and hasattr(sel, 'Mapping'):
+            self.queue_manager.remove_mapping(sel.Mapping)
+            self.refresh_queue_ui()
+            self.set_status("Removed selected mapping")
 
     def on_clear_queue(self, sender, args):
-        self.mapping_queue = []
-        self.queue_items.Clear()
+        self.queue_manager.clear()
+        self.refresh_queue_ui()
         self.set_status("Cleared mapping queue")
 
     def _element_provider(self, scope_name, cat_name):
