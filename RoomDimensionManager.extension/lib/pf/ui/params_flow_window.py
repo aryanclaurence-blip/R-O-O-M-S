@@ -249,7 +249,15 @@ class ParamsFlowWindow(forms.WPFWindow):
 
         from pf.core.validation_engine import PFValidationEngine
         from pf.core.preview import PFPreviewEngine
+        from pf.core.integrity import PFIntegrityEngine
 
+        # Run Integrity Scan
+        integrity_engine = PFIntegrityEngine(self.doc)
+        src_params = list(self.source_param_combo.ItemsSource) if hasattr(self.source_param_combo, 'ItemsSource') and self.source_param_combo.ItemsSource else []
+        tgt_params = list(self.target_param_combo.ItemsSource) if hasattr(self.target_param_combo, 'ItemsSource') and self.target_param_combo.ItemsSource else []
+        integ_reports, integ_summary = integrity_engine.scan_queue(mappings, src_params, tgt_params)
+
+        # Run Validation Engine
         val_engine = PFValidationEngine(self.doc)
         reports, summary = val_engine.validate_queue(mappings, self._element_provider)
 
@@ -265,19 +273,27 @@ class ParamsFlowWindow(forms.WPFWindow):
         for row in preview_rows:
             self.result_items.Add(row)
 
-        msg = "Validation Complete | Ready: {} | Warnings: {} | Errors: {} | Affected Targets: {} (Showing {} preview rows)".format(
-            summary.ready, summary.warnings, summary.errors, summary.affected_elements, len(preview_rows)
+        msg = "Validation Complete | Healthy: {} | Migration Needed: {} | Errors: {} | Preview Rows: {}".format(
+            integ_summary.healthy_count, integ_summary.needs_migration_count, summary.errors, len(preview_rows)
         )
         self.set_status(msg)
 
     def on_repair(self, sender, args):
         mappings = self.queue_manager.get_all()
         if not mappings:
+            forms.alert("Queue is empty.", title="PARAMS FLOW")
             return
-        from pf.core.validation_engine import PFValidationEngine
-        from pf.core.repair import RepairEngine
+        from pf.core.integrity import PFIntegrityEngine
+        integrity_engine = PFIntegrityEngine(self.doc)
+        src_params = list(self.source_param_combo.ItemsSource) if hasattr(self.source_param_combo, 'ItemsSource') and self.source_param_combo.ItemsSource else []
+        tgt_params = list(self.target_param_combo.ItemsSource) if hasattr(self.target_param_combo, 'ItemsSource') and self.target_param_combo.ItemsSource else []
+        integ_reports, integ_summary = integrity_engine.scan_queue(mappings, src_params, tgt_params)
 
-        val_engine = PFValidationEngine(self.doc)
+        repaired = integrity_engine.auto_repair_queue(mappings, integ_reports)
+        self.refresh_queue_ui()
+        forms.alert("Integrity Auto-Repair Summary:\n\nAuto-Repaired Parameter Mappings: {}\nNeeds Manual Repair: {}".format(
+            repaired, integ_summary.needs_repair_count
+        ), title="PARAMS FLOW Integrity & Repair Engine")
         repair_eng = RepairEngine(self.doc)
 
         suggestions = []
