@@ -1,6 +1,12 @@
-# -*- coding: utf-8 -*-
-"""Collector Service for PARAMS FLOW Discovery Layer."""
-from Autodesk.Revit.DB import FilteredElementCollector, ElementId
+try:
+    from Autodesk.Revit.DB import FilteredElementCollector, ElementId
+except ImportError:
+    class FilteredElementCollector(object):
+        def __init__(self, doc, view_id=None): pass
+        def WhereElementIsNotElementType(self): return []
+    class ElementId(object):
+        InvalidElementId = -1
+        def __init__(self, val=-1): self.IntegerValue = val
 
 class PFCollectorService(object):
     def __init__(self, doc, uidoc=None):
