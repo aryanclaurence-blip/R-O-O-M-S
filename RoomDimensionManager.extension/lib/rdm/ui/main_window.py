@@ -188,48 +188,38 @@ class MainWindow(forms.WPFWindow):
             self.on_clear_filter(None, None)
 
     def on_filter_clicked(self, sender, args):
-        filter_type = self._get_filter_name_for_button(sender)
-        is_active = sender.IsChecked
+        # 1. Update UI Toolbar Buttons: Single-selection visual state (only last clicked icon is active)
+        for btn in [self.filter_user, self.filter_rect, self.filter_quad, self.filter_poly, self.filter_curve]:
+            if btn != sender:
+                btn.IsChecked = False
+        sender.IsChecked = True
 
-        if self.filter_user.IsChecked:
+        filter_type = self._get_filter_name_for_button(sender)
+
+        if sender == self.filter_user:
             self.pick_rooms_button.Visibility = getattr(System.Windows.Visibility, "Visible", 0)
         else:
             self.pick_rooms_button.Visibility = getattr(System.Windows.Visibility, "Collapsed", 2)
             
-        any_checked = any(b.IsChecked for b in [self.filter_user, self.filter_rect, self.filter_quad, self.filter_poly, self.filter_curve])
-        if any_checked:
-            self.filter_clear.Visibility = getattr(System.Windows.Visibility, "Visible", 0)
-        else:
-            self.filter_clear.Visibility = getattr(System.Windows.Visibility, "Hidden", 1)
+        self.filter_clear.Visibility = getattr(System.Windows.Visibility, "Visible", 0)
 
-        # Multi-selection Additive Highlighting ("Color Splasher Mode")
+        # 2. Additive Highlighting ("Color Splasher Mode") in Model
         if not hasattr(self, 'rows') or not self.rows or self.rows.Count == 0:
             return
 
         matching_rows = [r for r in self.rows if self._room_matches_filter(r, filter_type)]
         if not matching_rows:
+            self.set_status("No rooms found for filter: {}".format(filter_type))
             return
 
-        if is_active:
-            # Apply highlights for newly selected shape category
-            try:
-                success_count, errors = HighlightService.apply_overrides(revit.doc, revit.doc.ActiveView, matching_rows)
-                revit.uidoc.RefreshActiveView()
-                self.remove_highlight_button.IsEnabled = True
-                self.set_status("Highlighted {} rooms ({})".format(success_count, filter_type))
-            except Exception as e:
-                self.set_status("Highlight error: {}".format(e))
-        else:
-            # Remove highlights ONLY for deselected shape category
-            try:
-                eids = [r.Room.Id for r in matching_rows if getattr(r, "Room", None)]
-                HighlightService.clear_previous_overrides(revit.doc, revit.doc.ActiveView, eids)
-                revit.uidoc.RefreshActiveView()
-                if not HighlightService._highlighted_elements:
-                    self.remove_highlight_button.IsEnabled = False
-                self.set_status("Removed highlights for {}".format(filter_type))
-            except Exception as e:
-                self.set_status("Remove highlight error: {}".format(e))
+        # Additively apply highlights for the selected shape category without clearing existing model highlights
+        try:
+            success_count, errors = HighlightService.apply_overrides(revit.doc, revit.doc.ActiveView, matching_rows, shape_category=filter_type)
+            revit.uidoc.RefreshActiveView()
+            self.remove_highlight_button.IsEnabled = True
+            self.set_status("Highlighted {} rooms ({})".format(success_count, filter_type))
+        except Exception as e:
+            self.set_status("Highlight error: {}".format(e))
 
     def on_clear_filter(self, sender, args):
         for btn in [self.filter_user, self.filter_rect, self.filter_quad, self.filter_poly, self.filter_curve]:
