@@ -117,28 +117,129 @@ class MainWindow(forms.WPFWindow):
     def _choice(self, control):
         return str(control.SelectedItem.Content)
 
-    def _populate_parameter_lists(self):
-        """List only writable-compatible Length parameters bound to Rooms."""
-        names = set()
+    def _collect_parameters_from_doc(self, doc_obj, scope_type="Entire Project"):
+        """Safely collect room parameters from a document (Host or Link). Filter out unplaced/invalid rooms."""
+        param_names = set()
+        rooms_skipped = 0
+        read_errors = 0
+        
         try:
-            rooms = RoomService(revit.doc).get_rooms("Entire Project")
+            r_service = RoomService(doc_obj)
+            rooms = r_service.get_rooms(scope_type)
             for room in rooms:
-                for parameter in room.Parameters:
-                    if parameter.StorageType in [StorageType.Double, StorageType.String]:
-                        names.add(parameter.Definition.Name)
+                try:
+                    if not room or not room.Location:
+                        rooms_skipped += 1
+                        continue
+                    if hasattr(room, "Area") and room.Area <= 0:
+                        rooms_skipped += 1
+                        continue
+                    
+                    for p in room.Parameters:
+                        try:
+                            if p.StorageType in [StorageType.Double, StorageType.String]:
+                                p_name = p.Definition.Name
+                                if p_name:
+                                    param_names.add(p_name)
+                        except Exception:
+                            read_errors += 1
+                except Exception:
+                    read_errors += 1
         except Exception:
             pass
-        values = ["None"] + sorted(names)
+
+        return param_names, rooms_skipped, read_errors
+
+    def _populate_parameter_lists(self):
+        """Scope-aware crash-safe room parameter discovery engine."""
+        import time
+        t_start = time.time()
+        
+        scope_name = "Current View"
+        try:
+            if hasattr(self, 'scope') and self.scope and self.scope.SelectedItem:
+                scope_name = self._choice(self.scope)
+        except Exception:
+            pass
+        
+        host_params = set()
+        link_params = set()
+        links_skipped = 0
+        total_rooms_skipped = 0
+        total_read_errors = 0
+
+        if scope_name in ["Current View", "Entire Project", "All Models"]:
+            h_params, h_skipped, h_errors = self._collect_parameters_from_doc(revit.doc, scope_name if scope_name != "All Models" else "Entire Project")
+            host_params.update(h_params)
+            total_rooms_skipped += h_skipped
+            total_read_errors += h_errors
+
+        if scope_name in ["Linked Models", "All Models"]:
+            try:
+                link_instances = list(FilteredElementCollector(revit.doc).OfClass(RevitLinkInstance))
+                for link in link_instances:
+                    try:
+                        link_doc = link.GetLinkDocument()
+                        if not link_doc:
+                            links_skipped += 1
+                            if DEVELOPER_DEBUG_MODE:
+                                print("Link skipped (Unloaded): {}".format(link.Name))
+                            continue
+                        
+                        l_params, l_skipped, l_errors = self._collect_parameters_from_doc(link_doc, "Entire Project")
+                        link_params.update(l_params)
+                        total_rooms_skipped += l_skipped
+                        total_read_errors += l_errors
+                    except Exception as le:
+                        links_skipped += 1
+                        if DEVELOPER_DEBUG_MODE:
+                            print("Link read error on {}: {}".format(link.Name, le))
+            except Exception as e:
+                if DEVELOPER_DEBUG_MODE:
+                    print("Error discovering linked instances: {}".format(e))
+
+        if scope_name in ["Current View", "Entire Project"]:
+            final_set = host_params
+        elif scope_name == "Linked Models":
+            final_set = link_params
+        else: # All Models
+            final_set = host_params.union(link_params)
+
+        t_elapsed = time.time() - t_start
+
+        if DEVELOPER_DEBUG_MODE:
+            print("\n======================================================================")
+            print("PARAMETER DISCOVERY ENGINE LOG")
+            print("======================================================================")
+            print("Scope                  : {}".format(scope_name))
+            print("Host Parameters Found  : {}".format(len(host_params)))
+            print("Linked Parameters Found: {}".format(len(link_params)))
+            print("Merged Parameters      : {}".format(len(final_set)))
+            print("Links Skipped          : {}".format(links_skipped))
+            print("Rooms Skipped          : {}".format(total_rooms_skipped))
+            print("Read Errors            : {}".format(total_read_errors))
+            print("Discovery Time         : {:.3f} seconds".format(t_elapsed))
+            print("======================================================================\n")
+
+        curr_len = str(self.length_parameter.SelectedItem or "") if hasattr(self, 'length_parameter') and self.length_parameter.SelectedItem else ""
+        curr_wid = str(self.width_parameter.SelectedItem or "") if hasattr(self, 'width_parameter') and self.width_parameter.SelectedItem else ""
+
+        values = ["None"] + sorted(final_set)
         self.length_parameter.ItemsSource = values
         self.width_parameter.ItemsSource = values
-        if "Length" in values:
+
+        if curr_len in values:
+            self.length_parameter.SelectedItem = curr_len
+        elif "Length" in values:
             self.length_parameter.SelectedItem = "Length"
         elif len(values) > 1:
             self.length_parameter.SelectedIndex = 1
         else:
             self.length_parameter.SelectedIndex = 0
 
-        if "Width" in values:
+        if curr_wid in values:
+            self.width_parameter.SelectedItem = curr_wid
+        elif "Width" in values:
             self.width_parameter.SelectedItem = "Width"
         elif len(values) > 2:
             self.width_parameter.SelectedIndex = 2
@@ -186,6 +287,8 @@ class MainWindow(forms.WPFWindow):
         else:
             self.filter_panel.IsEnabled = False
             self.on_clear_filter(None, None)
+
+        self._populate_parameter_lists()
 
     def on_filter_clicked(self, sender, args):
         # 1. Update UI Toolbar Buttons: Single-selection visual state (only last clicked icon is active)
