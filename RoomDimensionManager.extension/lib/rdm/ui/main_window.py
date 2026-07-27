@@ -380,21 +380,27 @@ class MainWindow(forms.WPFWindow):
             self.set_status("Operation Cancelled")
             return
 
-        is_single_mode = False
-        target_param = None
-
-        if is_len_none and not is_wid_none:
-            is_single_mode = True
-            target_param = width_name
-        elif is_wid_none and not is_len_none:
-            is_single_mode = True
-            target_param = length_name
+        if not is_len_none and is_wid_none:
+            processing_mode = "Combined Length Parameter"
+            target_param_name = length_name
+        elif is_len_none and not is_wid_none:
+            processing_mode = "Combined Width Parameter"
+            target_param_name = width_name
         elif length_name == width_name:
-            is_single_mode = True
-            target_param = length_name
+            processing_mode = "Combined Length Parameter"
+            target_param_name = length_name
+        else:
+            processing_mode = "Separate Parameters"
+            target_param_name = None
 
-        # Case 4 Validation: One parameter is a combined parameter while the other is a separate parameter
-        if not is_single_mode:
+        print("\n=== PARAMETER SELECTION & MODE TRACE ===")
+        print("Selected Length Parameter : {}".format(length_name))
+        print("Selected Width Parameter  : {}".format(width_name))
+        print("Processing Mode           : {}".format(processing_mode))
+        print("========================================")
+
+        # Mode 1 Guard (Combined + Separate check)
+        if processing_mode == "Separate Parameters":
             has_combined = False
             has_separate = False
             for r_data in filtered_rooms[:10]:
@@ -429,34 +435,33 @@ class MainWindow(forms.WPFWindow):
                 boundary = None
                 try:
                     boundary = r_service.get_outer_boundary(room)
-                except Exception as e:
+                except Exception:
                     pass
                 
-                if DEVELOPER_DEBUG_MODE:
-                    try:
-                        num = room.get_Parameter(BuiltInParameter.ROOM_NUMBER)
-                        if num and num.AsString() == "2":
-                            print("\n=== BOUNDARY RETRIEVAL TRACE ===")
-                            print("Room Number: 2")
-                            print("ElementId: {}".format(room.Id.IntegerValue))
-                            print("Area: {}".format(room.Area))
-                            print("Location: {}".format(room.Location.Point if room.Location else "None"))
-                            print("Boundary Segment Count: {}".format(len(boundary) if boundary else 0))
-                            print("Boundary Retrieval Success: {}".format(bool(boundary)))
-                            print("================================")
-                    except Exception:
-                        pass
-                
                 dimensions = calculate_from_boundary(boundary, algorithm, length_rule, width_rule)
-                if is_single_mode:
-                    p_res = p_service.read_dimension_result(room, target_param)
-                    if p_res and p_res.Success:
+                
+                old_length = None
+                old_width = None
+
+                if processing_mode in ["Combined Length Parameter", "Combined Width Parameter"]:
+                    # Read ONLY target_param_name. NEVER read parameter set to "None"
+                    p_res = p_service.read_dimension_result(room, target_param_name)
+                    print("\n--- SINGLE PARAMETER READ TRACE ---")
+                    print("Parameter Read            : {}".format(target_param_name))
+                    print("ParseResult.Success       : {}".format(p_res.Success))
+                    print("ParseResult.DimensionA    : {}".format(p_res.DimensionA))
+                    print("ParseResult.DimensionB    : {}".format(p_res.DimensionB))
+                    print("ParseResult.InternalA     : {}".format(p_res.InternalA))
+                    print("ParseResult.InternalB     : {}".format(p_res.InternalB))
+                    print("-----------------------------------")
+                    if p_res.Success:
                         old_length = p_res.InternalA
                         old_width = p_res.InternalB
                     else:
-                        old_length = p_service.read(room, target_param)
-                        old_width = p_service.read(room, target_param)
+                        old_length = p_service.read(room, target_param_name)
+                        old_width = p_service.read(room, target_param_name)
                 else:
+                    # Separate Parameters mode - read both parameters independently
                     old_length = p_service.read(room, length_name)
                     old_width = p_service.read(room, width_name)
                 
@@ -489,26 +494,12 @@ class MainWindow(forms.WPFWindow):
                 }
                 result_obj.ResultColor = colors.get(result_obj.Result, "#000000")
             except System.Exception as error:
+                print("System.Exception during room processing: {}".format(error))
                 session.log_error("Cross Check Error (.NET) on Room {}: {}".format(room.Id, error))
-                if DEVELOPER_DEBUG_MODE:
-                    import traceback
-                    print("\n=== FATAL EXCEPTION TRACE (ROOM 2) ===")
-                    print("Exception Type: {}".format(type(error).__name__))
-                    print("Exception Message: {}".format(str(error)))
-                    print("Traceback:")
-                    traceback.print_exc()
-                    print("======================================\n")
                 continue
             except Exception as error:
+                print("Exception during room processing: {}".format(error))
                 session.log_error("Cross Check Error on Room {}: {}".format(room.Id, error))
-                if DEVELOPER_DEBUG_MODE:
-                    import traceback
-                    print("\n=== FATAL EXCEPTION TRACE (ROOM 2) ===")
-                    print("Exception Type: {}".format(type(error).__name__))
-                    print("Exception Message: {}".format(str(error)))
-                    print("Traceback:")
-                    traceback.print_exc()
-                    print("======================================\n")
                 continue
                 
         session.stop_timer("Cross Check")
@@ -531,8 +522,8 @@ class MainWindow(forms.WPFWindow):
                         continue
                     if row.Result in ["FAIL", "USER REVIEW"]:
                         try:
-                            if is_single_mode:
-                                parameter_service.write_combined_dimensions(row.Room, target_param, row.CalculatedLength, row.CalculatedWidth)
+                            if processing_mode in ["Combined Length Parameter", "Combined Width Parameter"]:
+                                parameter_service.write_combined_dimensions(row.Room, target_param_name, row.CalculatedLength, row.CalculatedWidth)
                             else:
                                 parameter_service.write(row.Room, length_name, row.CalculatedLength)
                                 parameter_service.write(row.Room, width_name, row.CalculatedWidth)

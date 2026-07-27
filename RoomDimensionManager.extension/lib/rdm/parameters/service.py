@@ -14,9 +14,28 @@ class ParameterService(object):
         self.unit_helper = UnitHelper(doc)
 
     def read(self, room, parameter_name):
+        if not parameter_name or parameter_name == "None":
+            return None
         params = room.GetParameters(parameter_name)
         if not params:
             return None
+
+    def read_dimension_result(self, room, parameter_name):
+        """Read a parameter string and return a ParseResult object without accessing 'None' parameters."""
+        from rdm.utils.dimension_parser import ParseResult
+        if not parameter_name or parameter_name == "None":
+            return ParseResult(success=False, error_message="No parameter specified")
+
+        params = room.GetParameters(parameter_name)
+        if not params:
+            return ParseResult(success=False, error_message="Missing parameter: {0}".format(parameter_name))
+
+        for param in params:
+            if param.HasValue and param.StorageType == StorageType.String:
+                raw_str = param.AsString()
+                return self.unit_helper.parse_dimension_string(raw_str)
+
+        return ParseResult(success=False, error_message="Parameter is not a non-empty string")
             
         # Diagnostic logger helper
         def log_read(found_name, storage, raw_val, parsed_val, ret_val):
