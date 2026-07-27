@@ -10,7 +10,7 @@ import System
 from pyrevit.framework import ObservableCollection
 from Autodesk.Revit.DB import BuiltInParameter, StorageType, Transaction, FilteredElementCollector, RevitLinkInstance
 from pyrevit import forms, revit
-from rdm.geometry.bounds import calculate_from_boundary
+from rdm.geometry.bounds import calculate_from_boundary, RoomDimensions
 from rdm.parameters.service import ParameterService
 from rdm.reports.csv_exporter import export
 from rdm.revit.room_service import RoomService
