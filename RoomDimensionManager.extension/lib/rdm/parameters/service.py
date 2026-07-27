@@ -120,3 +120,26 @@ class ParameterService(object):
             # If the user specifically chose a String parameter, write the project-unit formatted string
             val_str = self.unit_helper.format_length(value)
             target_param.Set(val_str)
+
+    def write_combined_dimensions(self, room, parameter_name, length_val, width_val):
+        """Write dual length and width dimensions into a single String parameter."""
+        params = room.GetParameters(parameter_name)
+        if not params:
+            raise ValueError("Missing parameter: {0}".format(parameter_name))
+            
+        target_param = None
+        for param in params:
+            if not param.IsReadOnly and param.StorageType == StorageType.String:
+                target_param = param
+                break
+                
+        if target_param is None:
+            # Fallback for Double parameter: write primary length value
+            self.write(room, parameter_name, length_val)
+            return
+
+        len_str = self.unit_helper.format_length(length_val)
+        wid_str = self.unit_helper.format_length(width_val)
+        combined_str = "{} x {}".format(len_str, wid_str)
+        target_param.Set(combined_str)
+

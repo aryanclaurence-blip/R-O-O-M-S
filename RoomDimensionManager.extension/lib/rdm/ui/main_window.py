@@ -128,18 +128,23 @@ class MainWindow(forms.WPFWindow):
                         names.add(parameter.Definition.Name)
         except Exception:
             pass
-        values = sorted(names)
+        values = ["None"] + sorted(names)
         self.length_parameter.ItemsSource = values
         self.width_parameter.ItemsSource = values
         if "Length" in values:
             self.length_parameter.SelectedItem = "Length"
-        elif values:
+        elif len(values) > 1:
+            self.length_parameter.SelectedIndex = 1
+        else:
             self.length_parameter.SelectedIndex = 0
+
         if "Width" in values:
             self.width_parameter.SelectedItem = "Width"
+        elif len(values) > 2:
+            self.width_parameter.SelectedIndex = 2
         elif len(values) > 1:
             self.width_parameter.SelectedIndex = 1
-        elif values:
+        else:
             self.width_parameter.SelectedIndex = 0
 
     def _get_active_filter(self):
@@ -367,10 +372,49 @@ class MainWindow(forms.WPFWindow):
         except AttributeError:
             algorithm = "Opposite Wall Average (Default)"
         
-        if not length_name or not width_name:
-            forms.alert("Provide both parameter names.", title="Room Dimension Manager")
+        is_len_none = (not length_name) or (length_name == "None")
+        is_wid_none = (not width_name) or (width_name == "None")
+
+        if is_len_none and is_wid_none:
+            forms.alert("Select at least one parameter.", title="Room Dimension Manager")
+            self.set_status("Operation Cancelled")
             return
-            
+
+        is_single_mode = False
+        target_param = None
+
+        if is_len_none and not is_wid_none:
+            is_single_mode = True
+            target_param = width_name
+        elif is_wid_none and not is_len_none:
+            is_single_mode = True
+            target_param = length_name
+        elif length_name == width_name:
+            is_single_mode = True
+            target_param = length_name
+
+        # Case 4 Validation: One parameter is a combined parameter while the other is a separate parameter
+        if not is_single_mode:
+            has_combined = False
+            has_separate = False
+            for r_data in filtered_rooms[:10]:
+                r_obj = r_data[0]
+                d_obj = r_data[1]
+                ps = ParameterService(d_obj)
+                res_l = ps.read_dimension_result(r_obj, length_name)
+                res_w = ps.read_dimension_result(r_obj, width_name)
+                if res_l.Success or res_w.Success:
+                    has_combined = True
+                if (not res_l.Success and ps.read(r_obj, length_name) is not None) or (not res_w.Success and ps.read(r_obj, width_name) is not None):
+                    has_separate = True
+                if has_combined and has_separate:
+                    break
+
+            if has_combined and has_separate:
+                forms.alert("Select either:\n1. Two separate parameters (Length + Width), OR\n2. One combined parameter and set the other parameter to 'None'.", title="Room Dimension Manager")
+                self.set_status("Operation Cancelled")
+                return
+
         for r_data in filtered_rooms:
             room = r_data[0]
             doc_obj = r_data[1]
@@ -404,8 +448,17 @@ class MainWindow(forms.WPFWindow):
                         pass
                 
                 dimensions = calculate_from_boundary(boundary, algorithm, length_rule, width_rule)
-                old_length = p_service.read(room, length_name)
-                old_width = p_service.read(room, width_name)
+                if is_single_mode:
+                    p_res = p_service.read_dimension_result(room, target_param)
+                    if p_res and p_res.Success:
+                        old_length = p_res.InternalA
+                        old_width = p_res.InternalB
+                    else:
+                        old_length = p_service.read(room, target_param)
+                        old_width = p_service.read(room, target_param)
+                else:
+                    old_length = p_service.read(room, length_name)
+                    old_width = p_service.read(room, width_name)
                 
                 # 4. Create RoomResult with UNKNOWN status
                 result_obj = RoomResult(room, dimensions, old_length, old_width, "UNKNOWN", self.unit_helper, doc_obj, is_linked, doc_name, doc_id)
@@ -478,8 +531,11 @@ class MainWindow(forms.WPFWindow):
                         continue
                     if row.Result in ["FAIL", "USER REVIEW"]:
                         try:
-                            parameter_service.write(row.Room, length_name, row.CalculatedLength)
-                            parameter_service.write(row.Room, width_name, row.CalculatedWidth)
+                            if is_single_mode:
+                                parameter_service.write_combined_dimensions(row.Room, target_param, row.CalculatedLength, row.CalculatedWidth)
+                            else:
+                                parameter_service.write(row.Room, length_name, row.CalculatedLength)
+                                parameter_service.write(row.Room, width_name, row.CalculatedWidth)
                             row.Result = "UPDATED"
                             row.StoredLength = row.CalculatedLength
                             row.StoredWidth = row.CalculatedWidth
