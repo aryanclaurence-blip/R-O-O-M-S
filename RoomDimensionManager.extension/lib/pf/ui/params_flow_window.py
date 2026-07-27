@@ -47,8 +47,9 @@ class ParamsFlowWindow(forms.WPFWindow):
         self.move_down_btn.Click += self.on_move_down
         self.toggle_enabled_btn.Click += self.on_toggle_enabled
         self.remove_mapping_btn.Click += self.on_remove_mapping
-        self.clear_queue_btn.Click += self.on_clear_queue
         self.validate_btn.Click += self.on_validate
+        if hasattr(self, 'preview_btn') and self.preview_btn:
+            self.preview_btn.Click += self.on_validate
         self.repair_btn.Click += self.on_repair
         self.apply_btn.Click += self.on_apply
         self.load_preset_btn.Click += self.on_load_preset
@@ -56,6 +57,20 @@ class ParamsFlowWindow(forms.WPFWindow):
         self.export_csv_btn.Click += self.on_export_csv
         self.help_btn.Click += self.on_help
         
+        # Context Menu Wireups
+        if hasattr(self, 'ctx_duplicate_item') and self.ctx_duplicate_item:
+            self.ctx_duplicate_item.Click += self.on_duplicate
+        if hasattr(self, 'ctx_up_item') and self.ctx_up_item:
+            self.ctx_up_item.Click += self.on_move_up
+        if hasattr(self, 'ctx_down_item') and self.ctx_down_item:
+            self.ctx_down_item.Click += self.on_move_down
+        if hasattr(self, 'ctx_toggle_item') and self.ctx_toggle_item:
+            self.ctx_toggle_item.Click += self.on_toggle_enabled
+        if hasattr(self, 'ctx_remove_item') and self.ctx_remove_item:
+            self.ctx_remove_item.Click += self.on_remove_mapping
+        if hasattr(self, 'ctx_clear_item') and self.ctx_clear_item:
+            self.ctx_clear_item.Click += self.on_clear_queue
+
         # Initial Load
         self.refresh_categories()
 

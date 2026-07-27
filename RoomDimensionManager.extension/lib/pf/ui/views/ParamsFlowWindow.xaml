@@ -1,14 +1,14 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PARAMS FLOW v1.0.0" Height="750" Width="1150"
-        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI">
+        Title="PARAMS FLOW v1.0.0 — Enterprise Parameter Flow Engine" Height="780" Width="1180"
+        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI" Background="#F4F4F4">
     <Window.Resources>
         <Style TargetType="DataGrid">
-            <Setter Property="AlternatingRowBackground" Value="#F9F9F9"/>
+            <Setter Property="AlternatingRowBackground" Value="#FAFAFA"/>
             <Setter Property="RowHeight" Value="26"/>
             <Setter Property="ColumnHeaderHeight" Value="30"/>
-            <Setter Property="BorderBrush" Value="#D9D9D9"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="#D0D0D0"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="HorizontalGridLinesBrush" Value="#EAEAEA"/>
             <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
             <Setter Property="Background" Value="White"/>
@@ -18,11 +18,12 @@
             <Setter Property="SelectionUnit" Value="FullRow"/>
         </Style>
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#F0F0F0"/>
-            <Setter Property="BorderBrush" Value="#D9D9D9"/>
+            <Setter Property="Background" Value="#E8E8E8"/>
+            <Setter Property="BorderBrush" Value="#D0D0D0"/>
             <Setter Property="BorderThickness" Value="0,0,1,1"/>
             <Setter Property="Padding" Value="8,0,8,0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#333333"/>
         </Style>
         <Style TargetType="DataGridRow">
             <Style.Triggers>
@@ -34,67 +35,78 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="16">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="220"/>
+            <RowDefinition Height="240"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,12">
-            <TextBlock Text="PARAMS FLOW" FontSize="24" FontWeight="SemiBold"/>
-            <TextBlock x:Name="subtitle_label" Text="Enterprise Parameter Flow, Batch Mapping, and Validation Engine" Foreground="DimGray"/>
-        </StackPanel>
+        <!-- Revit Ribbon Header & Action Toolbar -->
+        <Border Grid.Row="0" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-        <!-- Top Controls: Scope & Category -->
-        <Grid Grid.Row="1" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <GroupBox Grid.Column="0" Header="PROCESSING SCOPE" Margin="0,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Scope:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox x:Name="scope_combo" SelectedIndex="0" Width="200" Height="24">
-                        <ComboBoxItem Content="Current View"/>
-                        <ComboBoxItem Content="Entire Project"/>
-                        <ComboBoxItem Content="Selected Elements"/>
-                    </ComboBox>
+                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <TextBlock Text="PARAMS FLOW" FontSize="20" FontWeight="Bold" Foreground="#0078D7"/>
+                    <TextBlock x:Name="subtitle_label" Text="Enterprise Parameter Flow &amp; Cross-Category Mapping Engine" FontSize="11" Foreground="Gray"/>
                 </StackPanel>
-            </GroupBox>
 
-            <GroupBox Grid.Column="1" Header="TARGET CATEGORY" Margin="8,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Category:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <ComboBox x:Name="category_combo" Width="220" Height="24"/>
-                </StackPanel>
-            </GroupBox>
+                <!-- Primary Revit Ribbon Command Bar -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Separator Width="1" Background="#D0D0D0" Margin="4,2,12,2"/>
 
-            <GroupBox Grid.Column="2" Header="PRESET MANAGER" Margin="8,0,0,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
-                <StackPanel Orientation="Horizontal">
-                    <Button x:Name="load_preset_btn" Content="Import Preset (JSON)" Width="140" Height="24" Margin="0,0,8,0"/>
-                    <Button x:Name="save_preset_btn" Content="Export Preset (JSON)" Width="140" Height="24"/>
+                    <Button x:Name="validate_btn" Content="✔ Validate Queue" Width="120" Height="28" Margin="0,0,6,0" FontWeight="SemiBold"/>
+                    <Button x:Name="preview_btn" Content="👁 Live Preview" Width="110" Height="28" Margin="0,0,6,0"/>
+                    <Button x:Name="apply_btn" Content="▶ Apply Batch" Width="125" Height="28" Margin="0,0,12,0" FontWeight="Bold" Background="#0078D7" Foreground="White"/>
+
+                    <Separator Width="1" Background="#D0D0D0" Margin="4,2,12,2"/>
+
+                    <Button x:Name="repair_btn" Content="🔧 Auto-Repair" Width="115" Height="28" Margin="0,0,6,0"/>
+                    <Button x:Name="export_csv_btn" Content="📊 Export CSV" Width="105" Height="28" Margin="0,0,6,0"/>
+
+                    <Separator Width="1" Background="#D0D0D0" Margin="4,2,12,2"/>
+
+                    <Button x:Name="load_preset_btn" Content="📂 Import Preset" Width="120" Height="28" Margin="0,0,6,0"/>
+                    <Button x:Name="save_preset_btn" Content="💾 Export Preset" Width="120" Height="28"/>
                 </StackPanel>
-            </GroupBox>
-        </Grid>
+
+                <Button Grid.Column="2" x:Name="help_btn" Content="❓ Help" Width="70" Height="28" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Scope Selection Strip -->
+        <Border Grid.Row="1" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="8,6" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Processing Scope:" FontWeight="SemiBold" VerticalAlignment="Center" Margin="4,0,8,0" Foreground="#333"/>
+                <ComboBox x:Name="scope_combo" SelectedIndex="0" Width="180" Height="24">
+                    <ComboBoxItem Content="Current View"/>
+                    <ComboBoxItem Content="Entire Project"/>
+                    <ComboBoxItem Content="Selected Elements"/>
+                </ComboBox>
+            </StackPanel>
+        </Border>
 
         <!-- Middle: Mapping Builder & Active Queue -->
-        <Grid Grid.Row="2" Margin="0,0,0,12">
+        <Grid Grid.Row="2" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="380"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Source -> Transformation -> Target Flow Builder -->
-            <GroupBox Grid.Column="0" Header="DATA FLOW MAPPING BUILDER" Margin="0,0,8,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="8">
+            <Border Grid.Column="0" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,8,0">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
+                        <TextBlock Text="DATA FLOW MAPPING BUILDER" FontWeight="Bold" FontSize="12" Foreground="#333" Margin="0,0,0,8"/>
+
                         <!-- SOURCE CARD -->
                         <Border Background="#F9F9F9" BorderBrush="#0078D7" BorderThickness="1" CornerRadius="3" Padding="8" Margin="0,0,0,8">
                             <StackPanel>
@@ -189,17 +201,32 @@
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
-            </GroupBox>
+            </Border>
 
             <!-- Active Mapping Queue -->
-            <GroupBox Grid.Column="1" Header="MAPPING QUEUE" Margin="8,0,0,0" BorderBrush="#D9D9D9" BorderThickness="1" Padding="0">
+            <Border Grid.Column="1" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="10">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="ACTIVE MAPPING QUEUE" FontWeight="Bold" FontSize="12" Foreground="#333" Margin="0,0,0,8"/>
                     
-                    <DataGrid Grid.Row="0" x:Name="queue_grid" AutoGenerateColumns="False" IsReadOnly="True">
+                    <DataGrid Grid.Row="1" x:Name="queue_grid" AutoGenerateColumns="False" IsReadOnly="True">
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Duplicate Mapping" x:Name="ctx_duplicate_item"/>
+                                <MenuItem Header="Move Up" x:Name="ctx_up_item"/>
+                                <MenuItem Header="Move Down" x:Name="ctx_down_item"/>
+                                <Separator/>
+                                <MenuItem Header="Enable / Disable" x:Name="ctx_toggle_item"/>
+                                <MenuItem Header="Remove Mapping" x:Name="ctx_remove_item"/>
+                                <Separator/>
+                                <MenuItem Header="Clear Queue" x:Name="ctx_clear_item"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="#" Binding="{Binding Order}" Width="35"/>
                             <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding Enabled}" Width="60"/>
@@ -216,7 +243,7 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <Grid Grid.Row="1" Margin="8">
+                    <Grid Grid.Row="2" Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -234,40 +261,42 @@
                         </StackPanel>
                     </Grid>
                 </Grid>
-            </GroupBox>
+            </Border>
         </Grid>
 
-        <!-- Action Toolbar -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12">
-            <Button x:Name="validate_btn" Content="Validate Queue" Width="120" Height="26" Margin="0,0,8,0"/>
-            <Button x:Name="repair_btn" Content="Repair Suggestions" Width="130" Height="26" Margin="0,0,16,0"/>
-            <Button x:Name="apply_btn" Content="Apply Mappings" Width="140" Height="26" Margin="0,0,8,0" FontWeight="Bold"/>
-            <Button x:Name="export_csv_btn" Content="Export CSV" Width="110" Height="26" Margin="0,0,8,0"/>
-            <Button x:Name="help_btn" Content="Help" Width="80" Height="26"/>
-        </StackPanel>
-
         <!-- Sample Preview & Results Grid -->
-        <GroupBox Grid.Row="4" Header="SAMPLE PREVIEW &amp; BATCH RESULTS" BorderBrush="#D9D9D9" BorderThickness="1" Padding="0">
-            <DataGrid x:Name="results_grid" AutoGenerateColumns="False" IsReadOnly="True">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID" Binding="{Binding ElementId}" Width="80"/>
-                    <DataGridTextColumn Header="Category" Binding="{Binding CategoryName}" Width="120"/>
-                    <DataGridTextColumn Header="Source" Binding="{Binding SourceMapping}" Width="160"/>
-                    <DataGridTextColumn Header="Target Parameter" Binding="{Binding TargetParameter}" Width="160"/>
-                    <DataGridTextColumn Header="Old Value" Binding="{Binding OldValue}" Width="*"/>
-                    <DataGridTextColumn Header="New Value" Binding="{Binding NewValue}" Width="*"/>
-                    <DataGridTemplateColumn Header="Status" Width="140">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Status}" Foreground="{Binding StatusColor}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-        </GroupBox>
+        <Border Grid.Row="4" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="4" Padding="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-        <!-- Footer Status -->
-        <TextBlock Grid.Row="5" x:Name="status_text" Margin="0,8,0,0" Foreground="DimGray" Text="Ready"/>
+                <TextBlock Grid.Row="0" Text="SAMPLE PREVIEW &amp; BATCH RESULTS" FontWeight="Bold" FontSize="12" Foreground="#333" Margin="0,0,0,8"/>
+
+                <DataGrid Grid.Row="1" x:Name="results_grid" AutoGenerateColumns="False" IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding ElementId}" Width="80"/>
+                        <DataGridTextColumn Header="Category" Binding="{Binding CategoryName}" Width="120"/>
+                        <DataGridTextColumn Header="Source" Binding="{Binding SourceMapping}" Width="160"/>
+                        <DataGridTextColumn Header="Target Parameter" Binding="{Binding TargetParameter}" Width="160"/>
+                        <DataGridTextColumn Header="Old Value" Binding="{Binding OldValue}" Width="*"/>
+                        <DataGridTextColumn Header="New Value" Binding="{Binding NewValue}" Width="*"/>
+                        <DataGridTemplateColumn Header="Status" Width="140">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Status}" Foreground="{Binding StatusColor}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <!-- Footer Status Bar -->
+        <Border Grid.Row="5" Background="White" BorderBrush="#D0D0D0" BorderThickness="1" CornerRadius="3" Padding="8,4" Margin="0,8,0,0">
+            <TextBlock x:Name="status_text" Foreground="DimGray" Text="Ready"/>
+        </Border>
     </Grid>
 </Window>
