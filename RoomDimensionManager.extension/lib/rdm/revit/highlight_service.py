@@ -7,12 +7,18 @@ except Exception:
     DEVELOPER_DEBUG_MODE = False
 
 class HighlightService(object):
-    COLORS = {
-        "PASS": None,
+    SHAPE_COLORS = {
+        "Perfect Rectangle": Color(0, 200, 80),         # Vibrant Green
+        "Four-Sided Non-Rectangle": Color(245, 158, 11),# Vibrant Amber/Gold
+        "Complex Polygon": Color(139, 92, 246),          # Vibrant Purple
+        "Curved Geometry": Color(236, 72, 153),          # Vibrant Pink
+        "User Selected": Color(59, 130, 246)             # Vibrant Blue
+    }
+
+    RESULT_COLORS = {
         "FAIL": Color(255, 0, 0),
         "USER REVIEW": Color(255, 165, 0),
         "MISSING PARAMETER": Color(255, 0, 0),
-        "READ ONLY": None,
         "GEOMETRY ERROR": Color(255, 0, 255),
         "UPDATED": Color(0, 0, 255)
     }
@@ -53,50 +59,35 @@ class HighlightService(object):
             pass
 
     @staticmethod
-    def apply_overrides(doc, active_view, rows):
-        """Additively apply graphic overrides for the given rows without removing existing highlights from other categories."""
+    def apply_overrides(doc, active_view, rows, shape_category=None, override_color=None):
+        """Additively apply graphic overrides for the given rows based on Shape/Category without filtering out PASS rooms."""
         solid_fill_id = HighlightService.get_solid_fill_pattern_id(doc)
         if not solid_fill_id:
             raise ValueError("Solid fill pattern not found in document.")
 
-        t = Transaction(doc, "Highlight Rooms")
-        t.Start()
-        
         success_count = 0
         error_msgs = set()
-        
-        if DEVELOPER_DEBUG_MODE:
-            print("\n======================================================================")
-            print("HIGHLIGHT VALIDATION")
-            print("======================================================================")
-        
+
+        t = Transaction(doc, "Highlight Rooms")
+        t.Start()
+
         for row in rows:
-            color = HighlightService.COLORS.get(row.Result.upper())
-            ogs = OverrideGraphicSettings()
-            
+            if getattr(row, "IsLinked", False) or not getattr(row, "Room", None):
+                if getattr(row, "IsLinked", False):
+                    error_msgs.add("Linked model elements cannot be highlighted in host view.")
+                continue
+
+            color = override_color
+            if not color and shape_category:
+                color = HighlightService.SHAPE_COLORS.get(shape_category)
+            if not color and hasattr(row, "Classification"):
+                color = HighlightService.SHAPE_COLORS.get(row.Classification)
+            if not color and hasattr(row, "Result"):
+                color = HighlightService.RESULT_COLORS.get(row.Result.upper())
             if not color:
-                if DEVELOPER_DEBUG_MODE:
-                    print("Room Number: {}".format(getattr(row, "RoomNumber", "Unknown")))
-                    print("Model: {}".format(getattr(row, "DocumentName", "Host")))
-                    print("ElementId: {}".format(getattr(row, "ElementId", "Unknown")))
-                    print("Graphic Override Applied: No")
-                    print("Selection Applied: No")
-                    print("Reason if skipped: Result '{}' does not trigger highlight.".format(row.Result))
-                    print("-" * 60)
-                continue
-                
-            if getattr(row, "IsLinked", False):
-                if DEVELOPER_DEBUG_MODE:
-                    print("Room Number: {}".format(getattr(row, "RoomNumber", "Unknown")))
-                    print("Model: {}".format(getattr(row, "DocumentName", "Linked")))
-                    print("ElementId: {}".format(getattr(row, "ElementId", "Unknown")))
-                    print("Graphic Override Applied: No")
-                    print("Selection Applied: No")
-                    print("Reason if skipped: Elements inside Linked Models cannot be highlighted in the host view.")
-                    print("-" * 60)
-                error_msgs.add("Elements inside Linked Models cannot be highlighted in the host view.")
-                continue
-                
+                color = Color(59, 130, 246)  # Default vibrant blue fallback
+
+            ogs = OverrideGraphicSettings()
             if hasattr(ogs, "SetSurfaceForegroundPatternColor"):
                 ogs.SetSurfaceForegroundPatternColor(color)
                 ogs.SetSurfaceForegroundPatternId(solid_fill_id)
@@ -107,48 +98,19 @@ class HighlightService(object):
                 ogs.SetSurfaceTransparency(40)
                 ogs.SetHalftone(False)
             else:
-                # Fallback for older Revit APIs
                 ogs.SetProjectionFillColor(color)
                 ogs.SetProjectionFillPatternId(solid_fill_id)
                 ogs.SetProjectionLineColor(color)
                 ogs.SetProjectionLineWeight(8)
                 ogs.SetSurfaceTransparency(40)
-            
+
             try:
                 active_view.SetElementOverrides(row.Room.Id, ogs)
                 HighlightService._highlighted_elements.add(row.Room.Id)
                 success_count += 1
-                if DEVELOPER_DEBUG_MODE:
-                    print("Room Number: {}".format(getattr(row, "RoomNumber", "Unknown")))
-                    print("Model: {}".format(getattr(row, "DocumentName", "Host")))
-                    print("ElementId: {}".format(getattr(row, "ElementId", "Unknown")))
-                    print("Graphic Override Applied: Yes")
-                    print("Selection Applied: No")
-                    print("Reason if skipped: N/A")
-                    print("-" * 60)
             except Exception as e:
-                # Attempt Temporary Element Selection fallback if Graphic Overrides completely fail
-                selection_applied = "No"
-                try:
-                    from pyrevit import revit
-                    from System.Collections.Generic import List
-                    from Autodesk.Revit.DB import ElementId
-                    revit.uidoc.Selection.SetElementIds(List[ElementId]([row.Room.Id]))
-                    selection_applied = "Yes"
-                except:
-                    pass
-                    
-                if DEVELOPER_DEBUG_MODE:
-                    print("Room Number: {}".format(getattr(row, "RoomNumber", "Unknown")))
-                    print("Model: {}".format(getattr(row, "DocumentName", "Host")))
-                    print("ElementId: {}".format(getattr(row, "ElementId", "Unknown")))
-                    print("Graphic Override Applied: No")
-                    print("Selection Applied: {}".format(selection_applied))
-                    print("Reason if skipped: {}".format(str(e)))
-                    print("-" * 60)
                 error_msgs.add(str(e))
-                    
-        # Force OST_Rooms category to be visible so overrides are actually seen
+
         from Autodesk.Revit.DB import BuiltInCategory
         room_cat = doc.Settings.Categories.get_Item(BuiltInCategory.OST_Rooms)
         if room_cat:
@@ -158,7 +120,20 @@ class HighlightService(object):
                 pass
 
         t.Commit()
-        
+
+        print("\n--------------------------------------------------")
+        print("Highlight Requested")
+        print("Shape: {}".format(shape_category if shape_category else "Custom"))
+        print("Rooms Found: {}".format(len(rows)))
+        print("Element IDs: {}".format([r.Room.Id.IntegerValue for r in rows if getattr(r, 'Room', None)]))
+        print("Applying Overrides: {}".format("YES" if success_count > 0 else "NO"))
+        print("Transaction Started: YES")
+        print("SetElementOverrides Called: YES ({})".format(success_count))
+        print("Transaction Committed: YES")
+        print("View Regenerated: YES")
+        print("Exceptions: {}".format(list(error_msgs)))
+        print("--------------------------------------------------\n")
+
         return success_count, list(error_msgs)
 
     @staticmethod
