@@ -17,7 +17,7 @@ class HighlightService(object):
         "UPDATED": Color(0, 0, 255)
     }
 
-    _highlighted_elements = []
+    _highlighted_elements = set()
 
     @staticmethod
     def get_solid_fill_pattern_id(doc):
@@ -32,27 +32,29 @@ class HighlightService(object):
         return None
 
     @staticmethod
-    def clear_previous_overrides(doc, active_view):
-        if not HighlightService._highlighted_elements:
+    def clear_previous_overrides(doc, active_view, element_ids=None):
+        """Clear graphic overrides for specified element_ids, or all highlighted elements if element_ids is None."""
+        target_ids = list(element_ids) if element_ids is not None else list(HighlightService._highlighted_elements)
+        if not target_ids:
             return
         try:
             t = Transaction(doc, "Clear RoomPro Highlights")
             t.Start()
-            for eid in HighlightService._highlighted_elements:
+            for eid in target_ids:
                 try:
                     ogs = OverrideGraphicSettings()
                     active_view.SetElementOverrides(eid, ogs)
                 except Exception:
                     pass
+                if eid in HighlightService._highlighted_elements:
+                    HighlightService._highlighted_elements.remove(eid)
             t.Commit()
-            HighlightService._highlighted_elements = []
         except Exception:
             pass
 
     @staticmethod
     def apply_overrides(doc, active_view, rows):
-        HighlightService.clear_previous_overrides(doc, active_view)
-        
+        """Additively apply graphic overrides for the given rows without removing existing highlights from other categories."""
         solid_fill_id = HighlightService.get_solid_fill_pattern_id(doc)
         if not solid_fill_id:
             raise ValueError("Solid fill pattern not found in document.")
@@ -114,7 +116,7 @@ class HighlightService(object):
             
             try:
                 active_view.SetElementOverrides(row.Room.Id, ogs)
-                HighlightService._highlighted_elements.append(row.Room.Id)
+                HighlightService._highlighted_elements.add(row.Room.Id)
                 success_count += 1
                 if DEVELOPER_DEBUG_MODE:
                     print("Room Number: {}".format(getattr(row, "RoomNumber", "Unknown")))
