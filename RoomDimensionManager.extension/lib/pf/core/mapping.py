@@ -7,9 +7,16 @@ class MappingType(object):
     COPY = "Parameter Copy"
     STATIC = "Static Value"
     SEQUENCE = "Sequence Generator"
-    FIND_REPLACE = "Find & Replace"
     PREFIX = "Prefix"
     SUFFIX = "Suffix"
+    FIND_REPLACE = "Find & Replace"
+    UPPER_CASE = "Upper Case"
+    LOWER_CASE = "Lower Case"
+    TITLE_CASE = "Title Case"
+    TRIM = "Trim"
+    TRIM_START = "Trim Start"
+    TRIM_END = "Trim End"
+    CLEAR_VALUE = "Clear Value"
 
 class ParameterMapping(object):
     def __init__(self, mapping_type=MappingType.COPY, source_param="", target_param="", static_value="", seq_pattern="RM-{SEQ:001}", seq_start=1, seq_step=1, find_str="", replace_str="", prefix_str="", suffix_str="", source_scope="Current View", source_cat="Rooms", target_cat="Rooms", mapping_id=None, enabled=True, status="Not Validated"):

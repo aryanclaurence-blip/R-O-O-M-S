@@ -118,7 +118,12 @@ class ParamsFlowWindow(forms.WPFWindow):
 
     def on_mode_changed(self, sender, args):
         mode = self._choice(self.mapping_mode_combo)
-        self.source_param_panel.Visibility = getattr(System.Windows.Visibility, "Visible", 0) if mode in [MappingType.COPY, MappingType.FIND_REPLACE] else getattr(System.Windows.Visibility, "Collapsed", 2)
+        need_source = mode in [
+            MappingType.COPY, MappingType.FIND_REPLACE, MappingType.PREFIX,
+            MappingType.SUFFIX, MappingType.UPPER_CASE, MappingType.LOWER_CASE,
+            MappingType.TITLE_CASE, MappingType.TRIM, MappingType.TRIM_START, MappingType.TRIM_END
+        ]
+        self.source_param_panel.Visibility = getattr(System.Windows.Visibility, "Visible", 0) if need_source else getattr(System.Windows.Visibility, "Collapsed", 2)
         self.static_value_panel.Visibility = getattr(System.Windows.Visibility, "Visible", 0) if mode == MappingType.STATIC else getattr(System.Windows.Visibility, "Collapsed", 2)
         self.sequence_panel.Visibility = getattr(System.Windows.Visibility, "Visible", 0) if mode == MappingType.SEQUENCE else getattr(System.Windows.Visibility, "Collapsed", 2)
 
@@ -246,24 +251,34 @@ class ParamsFlowWindow(forms.WPFWindow):
         forms.alert(summary_msg, title="PARAMS FLOW Batch Summary")
 
     def on_save_preset(self, sender, args):
-        if not self.mapping_queue:
-            forms.alert("Queue is empty.", title="PARAMS FLOW")
+        mappings = self.queue_manager.get_all()
+        if not mappings:
+            forms.alert("Mapping Queue is empty.", title="PARAMS FLOW")
             return
         path = forms.save_file(file_ext='json')
         if path:
-            data = [m.to_dict() for m in self.mapping_queue]
-            PresetService.save_preset(path, data)
-            forms.alert("Preset saved successfully.", title="PARAMS FLOW")
+            try:
+                data = [m.to_dict() for m in mappings]
+                doc_title = self.doc.Title if hasattr(self.doc, 'Title') else "Revit Model"
+                PresetService.save_preset(path, data, project_name=doc_title)
+                forms.alert("Preset saved successfully.", title="PARAMS FLOW")
+            except Exception as ex:
+                forms.alert("Error saving preset: {}".format(ex), title="PARAMS FLOW Error")
 
     def on_load_preset(self, sender, args):
         path = forms.pick_file(file_ext='json')
         if path:
-            data = PresetService.load_preset(path)
-            self.mapping_queue = [ParameterMapping.from_dict(d) for d in data]
-            self.queue_items.Clear()
-            for m in self.mapping_queue:
-                self.queue_items.Add(MappingItem(m))
-            self.set_status("Loaded preset with {} mappings.".format(len(self.mapping_queue)))
+            try:
+                data = PresetService.load_preset(path)
+                self.queue_manager.clear()
+                for d in data:
+                    mapping_obj = ParameterMapping.from_dict(d)
+                    self.queue_manager.add_mapping(mapping_obj)
+                self.refresh_queue_ui()
+                self.set_status("Loaded preset with {} mappings.".format(len(data)))
+                forms.alert("Preset loaded successfully ({} mappings).".format(len(data)), title="PARAMS FLOW")
+            except Exception as ex:
+                forms.alert("Error importing preset file:\n\n{}".format(ex), title="PARAMS FLOW Import Error")
 
     def on_export_csv(self, sender, args):
         if self.result_items.Count == 0:
@@ -271,8 +286,11 @@ class ParamsFlowWindow(forms.WPFWindow):
             return
         path = forms.save_file(file_ext='csv')
         if path:
-            export_pf_csv(path, list(self.result_items))
-            forms.alert("Exported results CSV successfully.", title="PARAMS FLOW")
+            try:
+                export_pf_csv(path, list(self.result_items))
+                forms.alert("Exported results CSV successfully.", title="PARAMS FLOW")
+            except Exception as ex:
+                forms.alert("Error exporting CSV: {}".format(ex), title="PARAMS FLOW Error")
 
     def on_help(self, sender, args):
         forms.alert("PARAMS FLOW v1.0.0\n\nBatch Parameter Flow, Validation, Sequence Generation & Preset Engine.\n\nPart of the ROOMS PRO Suite.", title="PARAMS FLOW Help")

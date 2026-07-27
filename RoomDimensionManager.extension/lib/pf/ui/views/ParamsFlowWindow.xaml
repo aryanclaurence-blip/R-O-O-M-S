@@ -99,7 +99,16 @@
                         <ComboBoxItem Content="Parameter Copy"/>
                         <ComboBoxItem Content="Static Value"/>
                         <ComboBoxItem Content="Sequence Generator"/>
+                        <ComboBoxItem Content="Prefix"/>
+                        <ComboBoxItem Content="Suffix"/>
                         <ComboBoxItem Content="Find &amp; Replace"/>
+                        <ComboBoxItem Content="Upper Case"/>
+                        <ComboBoxItem Content="Lower Case"/>
+                        <ComboBoxItem Content="Title Case"/>
+                        <ComboBoxItem Content="Trim"/>
+                        <ComboBoxItem Content="Trim Start"/>
+                        <ComboBoxItem Content="Trim End"/>
+                        <ComboBoxItem Content="Clear Value"/>
                     </ComboBox>
 
                     <StackPanel x:Name="source_param_panel" Margin="0,0,0,8">

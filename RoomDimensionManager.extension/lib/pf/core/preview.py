@@ -48,6 +48,26 @@ class PFPreviewEngine(object):
                     elif m.mapping_type == MappingType.SUFFIX:
                         raw = self.param_service.read_param_as_string(elem, m.source_param)
                         proposed_val = "{}{}".format(raw, m.suffix_str)
+                    elif m.mapping_type == MappingType.UPPER_CASE:
+                        raw = self.param_service.read_param_as_string(elem, m.source_param)
+                        proposed_val = raw.upper()
+                    elif m.mapping_type == MappingType.LOWER_CASE:
+                        raw = self.param_service.read_param_as_string(elem, m.source_param)
+                        proposed_val = raw.lower()
+                    elif m.mapping_type == MappingType.TITLE_CASE:
+                        raw = self.param_service.read_param_as_string(elem, m.source_param)
+                        proposed_val = raw.title()
+                    elif m.mapping_type == MappingType.TRIM:
+                        raw = self.param_service.read_param_as_string(elem, m.source_param)
+                        proposed_val = raw.strip()
+                    elif m.mapping_type == MappingType.TRIM_START:
+                        raw = self.param_service.read_param_as_string(elem, m.source_param)
+                        proposed_val = raw.lstrip()
+                    elif m.mapping_type == MappingType.TRIM_END:
+                        raw = self.param_service.read_param_as_string(elem, m.source_param)
+                        proposed_val = raw.rstrip()
+                    elif m.mapping_type == MappingType.CLEAR_VALUE:
+                        proposed_val = ""
                 except Exception as ex:
                     proposed_val = "[ERR: {}]".format(ex)
 
