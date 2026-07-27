@@ -430,7 +430,8 @@ class MainWindow(forms.WPFWindow):
             
             p_service = ParameterService(doc_obj)
             r_service = RoomService(doc_obj)
-            
+
+            # 1. Geometry Calculation
             try:
                 boundary = None
                 try:
@@ -439,68 +440,64 @@ class MainWindow(forms.WPFWindow):
                     pass
                 
                 dimensions = calculate_from_boundary(boundary, algorithm, length_rule, width_rule)
-                
-                old_length = None
-                old_width = None
-
-                if processing_mode in ["Combined Length Parameter", "Combined Width Parameter"]:
-                    # Read ONLY target_param_name. NEVER read parameter set to "None"
-                    p_res = p_service.read_dimension_result(room, target_param_name)
-                    print("\n--- SINGLE PARAMETER READ TRACE ---")
-                    print("Parameter Read            : {}".format(target_param_name))
-                    print("ParseResult.Success       : {}".format(p_res.Success))
-                    print("ParseResult.DimensionA    : {}".format(p_res.DimensionA))
-                    print("ParseResult.DimensionB    : {}".format(p_res.DimensionB))
-                    print("ParseResult.InternalA     : {}".format(p_res.InternalA))
-                    print("ParseResult.InternalB     : {}".format(p_res.InternalB))
-                    print("-----------------------------------")
-                    if p_res.Success:
-                        old_length = p_res.InternalA
-                        old_width = p_res.InternalB
-                    else:
-                        old_length = p_service.read(room, target_param_name)
-                        old_width = p_service.read(room, target_param_name)
-                else:
-                    # Separate Parameters mode - read both parameters independently
-                    old_length = p_service.read(room, length_name)
-                    old_width = p_service.read(room, width_name)
-                
-                # 4. Create RoomResult with UNKNOWN status
-                result_obj = RoomResult(room, dimensions, old_length, old_width, "UNKNOWN", self.unit_helper, doc_obj, is_linked, doc_name, doc_id)
-                
-                # 5. Populate Results Grid
-                self.rows.Add(result_obj)
-                
-                # 6. Evaluate PASS / FAIL
-                if old_length is None or old_width is None:
-                    result_obj.Result = "FAIL"
-                else:
-                    len_diff = abs(old_length - dimensions.length)
-                    wid_diff = abs(old_width - dimensions.width)
-                    eff_tol = tolerance + 1e-7
-                    len_pass = len_diff <= eff_tol
-                    wid_pass = wid_diff <= eff_tol
-                    
-                    if len_pass and wid_pass:
-                        result_obj.Result = "PASS"
-                    else:
-                        result_obj.Result = "FAIL"
-                
-                # Update result color for UI binding
-                colors = {
-                    "PASS": "#008000",
-                    "FAIL": "#E81123",
-                    "UNKNOWN": "#000000"
-                }
-                result_obj.ResultColor = colors.get(result_obj.Result, "#000000")
-            except System.Exception as error:
-                print("System.Exception during room processing: {}".format(error))
-                session.log_error("Cross Check Error (.NET) on Room {}: {}".format(room.Id, error))
-                continue
             except Exception as error:
-                print("Exception during room processing: {}".format(error))
-                session.log_error("Cross Check Error on Room {}: {}".format(room.Id, error))
+                session.log_error("Geometry Error on Room {}: {}".format(room.Id, error))
+                failed_dims = RoomDimensions(0.0, 0.0, "Unknown Geometry")
+                result_obj = RoomResult(room, failed_dims, None, None, "GEOMETRY ERROR", self.unit_helper, doc_obj, is_linked, doc_name, doc_id)
+                self.rows.Add(result_obj)
                 continue
+
+            # 2. Parameter Availability & Access Inspection
+            param_status = "WRITABLE"
+            if processing_mode in ["Combined Length Parameter", "Combined Width Parameter"]:
+                param_status = p_service.get_parameter_status(room, target_param_name)
+            else:
+                status_l = p_service.get_parameter_status(room, length_name)
+                status_w = p_service.get_parameter_status(room, width_name)
+                if status_l == "MISSING" or status_w == "MISSING":
+                    param_status = "MISSING"
+                elif status_l == "READ_ONLY" or status_w == "READ_ONLY":
+                    param_status = "READ_ONLY"
+
+            # 3. Parameter Reading & Parsing
+            old_length = None
+            old_width = None
+
+            if processing_mode in ["Combined Length Parameter", "Combined Width Parameter"]:
+                # Read ONLY target_param_name. NEVER read parameter set to "None"
+                p_res = p_service.read_dimension_result(room, target_param_name)
+                if p_res and p_res.Success:
+                    old_length = p_res.InternalA
+                    old_width = p_res.InternalB
+                else:
+                    old_length = p_service.read(room, target_param_name)
+                    old_width = p_service.read(room, target_param_name)
+            else:
+                # Separate Parameters mode - read both parameters independently
+                old_length = p_service.read(room, length_name)
+                old_width = p_service.read(room, width_name)
+
+            # 4. Result Evaluation Pipeline
+            if param_status == "MISSING":
+                final_result = "MISSING PARAMETER"
+            elif param_status == "READ_ONLY":
+                final_result = "READ ONLY"
+            elif old_length is None or old_width is None:
+                final_result = "MISSING PARAMETER" if param_status == "MISSING" else "FAIL"
+            else:
+                len_diff = abs(old_length - dimensions.length)
+                wid_diff = abs(old_width - dimensions.width)
+                eff_tol = tolerance + 1e-7
+                len_pass = len_diff <= eff_tol
+                wid_pass = wid_diff <= eff_tol
+
+                if len_pass and wid_pass:
+                    final_result = "PASS"
+                else:
+                    final_result = "FAIL"
+
+            result_obj = RoomResult(room, dimensions, old_length, old_width, final_result, self.unit_helper, doc_obj, is_linked, doc_name, doc_id)
+            self.rows.Add(result_obj)
                 
         session.stop_timer("Cross Check")
         

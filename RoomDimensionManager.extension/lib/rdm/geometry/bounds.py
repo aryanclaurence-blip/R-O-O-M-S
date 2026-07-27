@@ -10,6 +10,8 @@ class RoomDimensions(object):
 
 
 def calculate_from_boundary(segments, algorithm="Opposite Wall Average (Default)", length_rule="Largest", width_rule="Smallest"):
+    if not segments:
+        raise ValueError("Room boundary unavailable or unclosed.")
     curves = [seg.GetCurve() for seg in segments]
     
     # 1. Extract all tessellated points to perfectly encapsulate arcs and splines

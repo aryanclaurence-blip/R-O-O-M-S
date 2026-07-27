@@ -13,6 +13,21 @@ class ParameterService(object):
         self.doc = doc
         self.unit_helper = UnitHelper(doc)
 
+    def get_parameter_status(self, room, parameter_name):
+        """Check whether a parameter is missing, read-only, or writable on a room element.
+        Returns: 'MISSING', 'READ_ONLY', or 'WRITABLE'.
+        """
+        if not parameter_name or parameter_name == "None":
+            return "MISSING"
+        params = room.GetParameters(parameter_name)
+        if not params:
+            return "MISSING"
+        
+        for p in params:
+            if not p.IsReadOnly:
+                return "WRITABLE"
+        return "READ_ONLY"
+
     def read(self, room, parameter_name):
         if not parameter_name or parameter_name == "None":
             return None
